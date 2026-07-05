@@ -9,6 +9,13 @@ import {
 } from 'react-native';
 import { searchFoods } from '../api/usda';
 import FoodCard from '../components/FoodCard';
+import Screen from '../components/Screen';
+import {
+  colors,
+  input,
+  sectionLabel,
+  spacing,
+} from '../theme';
 
 // Curated picks shown before the user searches. These are REAL USDA
 // entries (fdcId) with scores computed from real lab data — so the card
@@ -119,18 +126,20 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <View style={styles.header}>
-        <Text style={styles.logo}>BRICK'D</Text>
+        <Text style={styles.logo}>
+          BRICK<Text style={styles.logoAccent}>'D</Text>
+        </Text>
         <Text style={styles.tagline}>
-          Foods that support healthy testosterone — backed by evidence
+          Evidence-based foods for healthy testosterone
         </Text>
       </View>
 
       <TextInput
         style={styles.search}
-        placeholder="Search 300,000+ foods (try 'oysters')..."
-        placeholderTextColor="#9ca3af"
+        placeholder="Search 300,000+ foods..."
+        placeholderTextColor={colors.textTertiary}
         value={query}
         onChangeText={setQuery}
       />
@@ -138,7 +147,7 @@ export default function HomeScreen({ navigation }) {
       {error && <Text style={styles.error}>{error}</Text>}
 
       {loading ? (
-        <ActivityIndicator size="large" color="#22c55e" style={styles.loader} />
+        <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
       ) : (
         <FlatList
           data={data}
@@ -148,77 +157,65 @@ export default function HomeScreen({ navigation }) {
           )}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            showingFeatured ? (
-              <Text style={styles.sectionTitle}>Featured picks</Text>
-            ) : (
-              <Text style={styles.sectionTitle}>
-                Results for "{query.trim()}" — sorted by Brick'd Score
-              </Text>
-            )
+            <Text style={styles.sectionTitle}>
+              {showingFeatured
+                ? 'Featured picks'
+                : `Results — sorted by Brick'd Score`}
+            </Text>
           }
           ListEmptyComponent={
             <Text style={styles.empty}>No foods found for "{query}"</Text>
           }
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111827',
-  },
   header: {
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: 24,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: 18,
   },
   logo: {
-    color: '#f9fafb',
-    fontSize: 32,
+    color: colors.text,
+    fontSize: 30,
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 3,
+  },
+  logoAccent: {
+    color: colors.accent,
   },
   tagline: {
-    color: '#9ca3af',
+    color: colors.textSecondary,
     fontSize: 13,
-    marginTop: 4,
+    marginTop: 5,
   },
   search: {
-    backgroundColor: '#1f2937',
-    color: '#f9fafb',
-    marginHorizontal: 20,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    fontSize: 16,
+    ...input,
+    marginHorizontal: spacing.screen,
+    marginBottom: 14,
   },
   sectionTitle: {
-    color: '#6b7280',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 10,
+    ...sectionLabel,
+    marginBottom: 12,
   },
   loader: {
     marginTop: 40,
   },
   error: {
-    color: '#f87171',
-    marginHorizontal: 20,
+    color: colors.danger,
+    marginHorizontal: spacing.screen,
     marginBottom: 8,
     fontSize: 13,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screen,
     paddingBottom: 40,
   },
   empty: {
-    color: '#9ca3af',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 40,
   },

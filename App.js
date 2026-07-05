@@ -11,6 +11,7 @@ import StoreDetailScreen from './src/screens/StoreDetailScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import SavedScreen from './src/screens/SavedScreen';
 import { FavoritesProvider } from './src/store/favorites';
+import { colors } from './src/theme';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -20,11 +21,19 @@ const theme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#111827',
-    card: '#111827',
-    text: '#f9fafb',
-    primary: '#22c55e',
+    background: colors.bg,
+    card: colors.bg,
+    text: colors.text,
+    primary: colors.accent,
+    border: colors.hairline,
   },
+};
+
+const detailScreenOptions = {
+  title: '',
+  headerBackTitle: 'Back',
+  headerTransparent: true,
+  headerTintColor: colors.text,
 };
 
 // The Foods tab is a stack: food list -> food detail.
@@ -39,7 +48,7 @@ function HomeStack() {
       <Stack.Screen
         name="FoodDetail"
         component={FoodDetailScreen}
-        options={{ title: '', headerBackTitle: 'Back' }}
+        options={detailScreenOptions}
       />
     </Stack.Navigator>
   );
@@ -57,7 +66,7 @@ function SavedStack() {
       <Stack.Screen
         name="FoodDetail"
         component={FoodDetailScreen}
-        options={{ title: '', headerBackTitle: 'Back' }}
+        options={detailScreenOptions}
       />
     </Stack.Navigator>
   );
@@ -75,12 +84,12 @@ function StoresStack() {
       <Stack.Screen
         name="StoreDetail"
         component={StoreDetailScreen}
-        options={{ title: '', headerBackTitle: 'Back' }}
+        options={detailScreenOptions}
       />
       <Stack.Screen
         name="FoodDetail"
         component={FoodDetailScreen}
-        options={{ title: '', headerBackTitle: 'Back' }}
+        options={detailScreenOptions}
       />
     </Stack.Navigator>
   );
@@ -102,11 +111,30 @@ export default function App() {
           <Tab.Navigator
             screenOptions={({ route }) => ({
               headerShown: false,
-              tabBarStyle: { backgroundColor: '#1f2937', borderTopColor: '#374151' },
-              tabBarActiveTintColor: '#22c55e',
-              tabBarInactiveTintColor: '#6b7280',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name={TAB_ICONS[route.name]} size={size} color={color} />
+              tabBarStyle: {
+                backgroundColor: colors.tabBar,
+                borderTopColor: colors.hairline,
+                borderTopWidth: 1,
+                height: 62,
+                paddingTop: 6,
+              },
+              tabBarLabelStyle: {
+                fontSize: 10,
+                fontWeight: '700',
+                letterSpacing: 0.4,
+              },
+              tabBarActiveTintColor: colors.accent,
+              tabBarInactiveTintColor: colors.textTertiary,
+              tabBarIcon: ({ color, size, focused }) => (
+                <Ionicons
+                  name={
+                    focused
+                      ? TAB_ICONS[route.name]
+                      : `${TAB_ICONS[route.name]}-outline`
+                  }
+                  size={size - 2}
+                  color={color}
+                />
               ),
             })}
           >

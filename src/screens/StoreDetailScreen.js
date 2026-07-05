@@ -1,7 +1,15 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { getFoodsForStore } from '../data/curatedFoods';
 import FoodCard from '../components/FoodCard';
+import Screen from '../components/Screen';
 import { formatDistance, CUISINE_LABELS } from '../api/stores';
+import {
+  chip,
+  chipText,
+  colors,
+  sectionLabel,
+  spacing,
+} from '../theme';
 
 // Explains where the list came from, honestly.
 function basisText(basis, store) {
@@ -19,141 +27,145 @@ export default function StoreDetailScreen({ route, navigation }) {
   const { foods, basis } = getFoodsForStore(store);
 
   return (
-    <FlatList
-      style={styles.container}
-      contentContainerStyle={styles.list}
-      data={foods}
-      keyExtractor={(item) => String(item.fdcId)}
-      renderItem={({ item }) => (
-        <FoodCard
-          food={item}
-          onPress={() =>
-            navigation.navigate('FoodDetail', {
-              fdcId: item.fdcId,
-              name: item.name,
-              score: item.score,
-            })
-          }
-        />
-      )}
-      ListHeaderComponent={
-        <View>
-          <View style={styles.header}>
-            <Text style={styles.storeName}>{store.name}</Text>
-            <View style={styles.metaRow}>
-              <View style={styles.typeChip}>
-                <Text style={styles.typeText}>{store.type}</Text>
-              </View>
-              {store.cuisine && (
-                <View style={[styles.typeChip, styles.cuisineChip]}>
-                  <Text style={styles.cuisineText}>
-                    {CUISINE_LABELS[store.cuisine]}
-                  </Text>
+    <Screen>
+      <FlatList
+        contentContainerStyle={styles.list}
+        data={foods}
+        keyExtractor={(item) => String(item.fdcId)}
+        renderItem={({ item }) => (
+          <FoodCard
+            food={item}
+            onPress={() =>
+              navigation.navigate('FoodDetail', {
+                fdcId: item.fdcId,
+                name: item.name,
+                score: item.score,
+              })
+            }
+          />
+        )}
+        ListHeaderComponent={
+          <View>
+            <View style={styles.header}>
+              <Text style={styles.storeName}>{store.name}</Text>
+              <View style={styles.metaRow}>
+                <View style={styles.typeChip}>
+                  <Text style={styles.typeText}>{store.type}</Text>
                 </View>
+                {store.cuisine && (
+                  <View style={[styles.typeChip, styles.cuisineChip]}>
+                    <Text style={styles.cuisineText}>
+                      {CUISINE_LABELS[store.cuisine]}
+                    </Text>
+                  </View>
+                )}
+                <Text style={styles.distance}>
+                  {formatDistance(store.distanceKm)}
+                </Text>
+              </View>
+              {store.address && (
+                <Text style={styles.address}>{store.address}</Text>
               )}
-              <Text style={styles.distance}>
-                {formatDistance(store.distanceKm)}
+              {store.openingHours && (
+                <Text style={styles.hours}>{store.openingHours}</Text>
+              )}
+            </View>
+
+            <View style={styles.disclaimer}>
+              <Text style={styles.disclaimerTitle}>
+                Foods commonly found here
+              </Text>
+              <Text style={styles.disclaimerText}>
+                {basisText(basis, store)}
+                This isn't this store's real-time stock — no public data
+                source provides that for most grocery stores.
               </Text>
             </View>
-            {store.address && (
-              <Text style={styles.address}>{store.address}</Text>
-            )}
-            {store.openingHours && (
-              <Text style={styles.hours}>Hours: {store.openingHours}</Text>
-            )}
-          </View>
 
-          <View style={styles.disclaimer}>
-            <Text style={styles.disclaimerTitle}>
-              Foods commonly found here
-            </Text>
-            <Text style={styles.disclaimerText}>
-              {basisText(basis, store)}
-              This isn't this store's real-time stock — no public data
-              source provides that for most grocery stores.
+            <Text style={styles.sectionTitle}>
+              Sorted by Brick'd Score
             </Text>
           </View>
-        </View>
-      }
-    />
+        }
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111827',
-  },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screen,
     paddingBottom: 40,
   },
   header: {
-    paddingTop: 16,
+    paddingTop: 14,
     paddingBottom: 12,
   },
   storeName: {
-    color: '#f9fafb',
+    color: colors.text,
     fontSize: 24,
-    fontWeight: '900',
+    fontWeight: '800',
+    letterSpacing: -0.4,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    gap: 10,
+    flexWrap: 'wrap',
+    marginTop: 10,
+    gap: 8,
   },
   typeChip: {
-    backgroundColor: '#374151',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    ...chip,
   },
   typeText: {
-    color: '#d1d5db',
-    fontSize: 12,
+    ...chipText,
   },
   cuisineChip: {
-    backgroundColor: '#164e2e',
+    backgroundColor: colors.accentDim,
+    borderColor: colors.accentBorder,
   },
   cuisineText: {
-    color: '#4ade80',
-    fontSize: 12,
+    ...chipText,
+    color: colors.accent,
     fontWeight: '700',
   },
   distance: {
-    color: '#22c55e',
-    fontSize: 14,
+    color: colors.accent,
+    fontSize: 13,
     fontWeight: '800',
   },
   address: {
-    color: '#9ca3af',
+    color: colors.textSecondary,
     fontSize: 13,
-    marginTop: 8,
+    marginTop: 10,
   },
   hours: {
-    color: '#6b7280',
+    color: colors.textTertiary,
     fontSize: 12,
     marginTop: 4,
   },
   disclaimer: {
-    backgroundColor: '#78350f22',
-    borderColor: '#a16207',
+    backgroundColor: colors.warnDim,
+    borderColor: colors.warnBorder,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
-    marginTop: 14,
-    marginBottom: 18,
+    marginTop: 12,
+    marginBottom: 20,
   },
   disclaimerTitle: {
-    color: '#fbbf24',
+    color: colors.warn,
     fontSize: 13,
     fontWeight: '800',
   },
   disclaimerText: {
-    color: '#d1d5db',
+    color: colors.textSecondary,
     fontSize: 12,
     marginTop: 6,
     lineHeight: 18,
+  },
+  sectionTitle: {
+    ...sectionLabel,
+    marginBottom: 12,
   },
 });

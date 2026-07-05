@@ -6,36 +6,40 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getFoodDetails, RESEARCH_NOTES } from '../api/usda';
-
-function scoreColor(score) {
-  if (score >= 60) return '#22c55e';
-  if (score >= 30) return '#eab308';
-  return '#f97316';
-}
+import Screen from '../components/Screen';
+import {
+  colors,
+  glassCard,
+  scoreColor,
+  sectionLabel,
+  spacing,
+} from '../theme';
 
 // One row of the "Why this score" section: label, amount, points earned,
-// and a progress bar showing points / maxPoints.
+// and a gradient progress bar showing points / maxPoints.
 function BreakdownRow({ item }) {
   const pct = item.maxPoints > 0 ? item.points / item.maxPoints : 0;
+  const tint = scoreColor(pct * 100);
   return (
     <View style={styles.row}>
       <View style={styles.rowTop}>
         <Text style={styles.rowLabel}>{item.label}</Text>
         <Text style={styles.rowValue}>
           {item.value}
-          {item.unit} per 100g
+          {item.unit} / 100g
         </Text>
-        <Text style={styles.rowPoints}>
-          {item.points}/{item.maxPoints} pts
+        <Text style={[styles.rowPoints, { color: tint }]}>
+          {item.points}/{item.maxPoints}
         </Text>
       </View>
       <View style={styles.barTrack}>
-        <View
-          style={[
-            styles.barFill,
-            { width: `${pct * 100}%`, backgroundColor: scoreColor(pct * 100) },
-          ]}
+        <LinearGradient
+          colors={[`${tint}55`, tint]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.barFill, { width: `${Math.max(pct * 100, 2)}%` }]}
         />
       </View>
     </View>
@@ -60,191 +64,208 @@ export default function FoodDetailScreen({ route }) {
   }, [fdcId]);
 
   const displayScore = details ? details.score : score;
+  const ring = scoreColor(displayScore);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.scoreHero}>
-        <View
-          style={[styles.scoreCircle, { borderColor: scoreColor(displayScore) }]}
-        >
-          <Text style={styles.scoreBig}>{displayScore}</Text>
-          <Text style={styles.scoreOutOf}>/ 100</Text>
+    <Screen>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.scoreHero}>
+          <View style={[styles.scoreHalo, { shadowColor: ring }]}>
+            <View style={[styles.scoreCircle, { borderColor: ring }]}>
+              <Text style={styles.scoreBig}>{displayScore}</Text>
+              <Text style={styles.scoreOutOf}>/ 100</Text>
+            </View>
+          </View>
+          <Text style={styles.foodName}>{details ? details.name : name}</Text>
+          <Text style={styles.scoreCaption}>BRICK'D SCORE · PER 100G</Text>
         </View>
-        <Text style={styles.foodName}>{details ? details.name : name}</Text>
-        <Text style={styles.scoreCaption}>Brick'd Score per 100g</Text>
-      </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+        {error && <Text style={styles.error}>{error}</Text>}
 
-      {!details && !error && (
-        <ActivityIndicator size="large" color="#22c55e" style={{ marginTop: 24 }} />
-      )}
+        {!details && !error && (
+          <ActivityIndicator
+            size="large"
+            color={colors.accent}
+            style={{ marginTop: 24 }}
+          />
+        )}
 
-      {details && (
-        <>
-          <Text style={styles.sectionTitle}>Why this score</Text>
-          <View style={styles.cardBlock}>
-            {details.breakdown.map((item) => (
-              <BreakdownRow key={item.key} item={item} />
-            ))}
-            <Text style={styles.methodNote}>
-              Points reflect how far 100g gets you toward daily intakes
-              (adult male RDAs) for nutrients involved in normal
-              testosterone production. No food raises testosterone above
-              normal in men who are already nutrient-sufficient.
-            </Text>
-          </View>
+        {details && (
+          <>
+            <Text style={styles.sectionTitle}>Why this score</Text>
+            <View style={styles.cardBlock}>
+              {details.breakdown.map((item) => (
+                <BreakdownRow key={item.key} item={item} />
+              ))}
+              <Text style={styles.methodNote}>
+                Points reflect how far 100g gets you toward daily intakes
+                (adult male RDAs) for nutrients involved in normal
+                testosterone production. No food raises testosterone above
+                normal in men who are already nutrient-sufficient.
+              </Text>
+            </View>
 
-          <Text style={styles.sectionTitle}>The research</Text>
-          <View style={styles.cardBlock}>
-            {details.breakdown
-              .filter((item) => item.points > 0)
-              .map((item) => {
-                const note = RESEARCH_NOTES[item.key];
-                return (
-                  <View key={item.key} style={styles.researchItem}>
-                    <View style={styles.researchHeader}>
-                      <Text style={styles.researchLabel}>{item.label}</Text>
-                      <Text style={styles.researchStrength}>{note.strength}</Text>
+            <Text style={styles.sectionTitle}>The research</Text>
+            <View style={styles.cardBlock}>
+              {details.breakdown
+                .filter((item) => item.points > 0)
+                .map((item, i, arr) => {
+                  const note = RESEARCH_NOTES[item.key];
+                  return (
+                    <View
+                      key={item.key}
+                      style={[
+                        styles.researchItem,
+                        i === arr.length - 1 && { marginBottom: 0 },
+                      ]}
+                    >
+                      <View style={styles.researchHeader}>
+                        <Text style={styles.researchLabel}>{item.label}</Text>
+                        <Text style={styles.researchStrength}>
+                          {note.strength}
+                        </Text>
+                      </View>
+                      <Text style={styles.researchText}>{note.text}</Text>
                     </View>
-                    <Text style={styles.researchText}>{note.text}</Text>
-                  </View>
-                );
-              })}
-          </View>
-        </>
-      )}
-    </ScrollView>
+                  );
+                })}
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111827',
-  },
   content: {
-    padding: 20,
+    padding: spacing.screen,
     paddingBottom: 60,
   },
   scoreHero: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 26,
+  },
+  scoreHalo: {
+    shadowOpacity: 0.55,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
+    borderRadius: 62,
+    marginBottom: 16,
   },
   scoreCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 5,
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
   },
   scoreBig: {
-    color: '#f9fafb',
-    fontSize: 40,
-    fontWeight: '900',
+    color: colors.text,
+    fontSize: 42,
+    fontWeight: '800',
+    letterSpacing: -1,
   },
   scoreOutOf: {
-    color: '#9ca3af',
-    fontSize: 13,
-    marginTop: -4,
+    color: colors.textTertiary,
+    fontSize: 12,
+    marginTop: -2,
   },
   foodName: {
-    color: '#f9fafb',
-    fontSize: 22,
+    color: colors.text,
+    fontSize: 21,
     fontWeight: '700',
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   scoreCaption: {
-    color: '#6b7280',
-    fontSize: 12,
-    marginTop: 4,
+    color: colors.textTertiary,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+    marginTop: 6,
   },
   sectionTitle: {
-    color: '#6b7280',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    ...sectionLabel,
     marginBottom: 10,
     marginTop: 8,
   },
   cardBlock: {
-    backgroundColor: '#1f2937',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 20,
+    ...glassCard,
+    marginBottom: 22,
   },
   row: {
-    marginBottom: 14,
+    marginBottom: 15,
   },
   rowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 7,
   },
   rowLabel: {
-    color: '#f9fafb',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '700',
     flex: 1,
   },
   rowValue: {
-    color: '#9ca3af',
+    color: colors.textSecondary,
     fontSize: 12,
-    marginRight: 10,
+    marginRight: 12,
   },
   rowPoints: {
-    color: '#d1d5db',
     fontSize: 12,
-    fontWeight: '700',
-    width: 60,
+    fontWeight: '800',
+    width: 44,
     textAlign: 'right',
   },
   barTrack: {
-    height: 8,
-    backgroundColor: '#374151',
-    borderRadius: 4,
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   methodNote: {
-    color: '#6b7280',
+    color: colors.textTertiary,
     fontSize: 12,
     fontStyle: 'italic',
-    marginTop: 6,
+    marginTop: 4,
     lineHeight: 17,
   },
   researchItem: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   researchHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 5,
   },
   researchLabel: {
-    color: '#f9fafb',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '700',
   },
   researchStrength: {
-    color: '#22c55e',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   researchText: {
-    color: '#9ca3af',
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
   },
   error: {
-    color: '#f87171',
+    color: colors.danger,
     textAlign: 'center',
     marginTop: 20,
   },

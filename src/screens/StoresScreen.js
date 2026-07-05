@@ -9,10 +9,22 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { getNearbyStores, formatDistance, CUISINE_LABELS } from '../api/stores';
+import Screen from '../components/Screen';
+import {
+  buttonPrimary,
+  buttonPrimaryText,
+  chip,
+  chipText,
+  colors,
+  glassCard,
+  screenSubtitle,
+  screenTitle,
+  spacing,
+} from '../theme';
 
 function StoreCard({ store, onPress }) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.65} onPress={onPress}>
       <View style={styles.cardHeader}>
         <Text style={styles.storeName}>{store.name}</Text>
         <Text style={styles.distance}>{formatDistance(store.distanceKm)}</Text>
@@ -29,7 +41,7 @@ function StoreCard({ store, onPress }) {
         {store.address && <Text style={styles.address}>{store.address}</Text>}
       </View>
       {store.openingHours && (
-        <Text style={styles.hours}>Hours: {store.openingHours}</Text>
+        <Text style={styles.hours}>{store.openingHours}</Text>
       )}
       <Text style={styles.viewFoods}>See foods commonly found here →</Text>
     </TouchableOpacity>
@@ -67,9 +79,9 @@ export default function StoresScreen({ navigation }) {
   }, [locate]);
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <View style={styles.header}>
-        <Text style={styles.title}>Nearby Stores</Text>
+        <Text style={styles.title}>Stores</Text>
         <Text style={styles.subtitle}>
           Grocery stores around you, closest first
         </Text>
@@ -77,7 +89,7 @@ export default function StoresScreen({ navigation }) {
 
       {status === 'loading' && (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#22c55e" />
+          <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.centerText}>Finding stores near you...</Text>
         </View>
       )}
@@ -123,29 +135,21 @@ export default function StoresScreen({ navigation }) {
           }
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111827',
-  },
   header: {
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: 24,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: 18,
   },
   title: {
-    color: '#f9fafb',
-    fontSize: 26,
-    fontWeight: '900',
+    ...screenTitle,
   },
   subtitle: {
-    color: '#9ca3af',
-    fontSize: 13,
-    marginTop: 4,
+    ...screenSubtitle,
   },
   centerBox: {
     alignItems: 'center',
@@ -153,32 +157,25 @@ const styles = StyleSheet.create({
     marginTop: 48,
   },
   centerText: {
-    color: '#9ca3af',
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     marginTop: 14,
     lineHeight: 20,
   },
   retryButton: {
-    backgroundColor: '#22c55e',
-    borderRadius: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    ...buttonPrimary,
     marginTop: 18,
   },
   retryText: {
-    color: '#111827',
-    fontWeight: '800',
-    fontSize: 14,
+    ...buttonPrimaryText,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screen,
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#1f2937',
-    borderRadius: 14,
-    padding: 16,
+    ...glassCard,
     marginBottom: 12,
   },
   cardHeader: {
@@ -187,55 +184,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   storeName: {
-    color: '#f9fafb',
-    fontSize: 17,
+    color: colors.text,
+    fontSize: 16,
     fontWeight: '700',
+    letterSpacing: -0.2,
     flex: 1,
   },
   distance: {
-    color: '#22c55e',
-    fontSize: 14,
+    color: colors.accent,
+    fontSize: 13,
     fontWeight: '800',
     marginLeft: 10,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    flexWrap: 'wrap',
+    marginTop: 9,
     gap: 8,
   },
   typeChip: {
-    backgroundColor: '#374151',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    ...chip,
   },
   typeText: {
-    color: '#d1d5db',
-    fontSize: 12,
+    ...chipText,
   },
   cuisineChip: {
-    backgroundColor: '#164e2e',
+    backgroundColor: colors.accentDim,
+    borderColor: colors.accentBorder,
   },
   cuisineText: {
-    color: '#4ade80',
-    fontSize: 12,
+    ...chipText,
+    color: colors.accent,
     fontWeight: '700',
   },
   address: {
-    color: '#9ca3af',
+    color: colors.textTertiary,
     fontSize: 12,
     flex: 1,
   },
   hours: {
-    color: '#6b7280',
+    color: colors.textTertiary,
     fontSize: 12,
     marginTop: 8,
   },
   viewFoods: {
-    color: '#22c55e',
+    color: colors.accent,
     fontSize: 12,
     fontWeight: '700',
-    marginTop: 10,
+    marginTop: 12,
   },
 });

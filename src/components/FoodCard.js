@@ -1,38 +1,36 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../store/favorites';
+import { colors, glassCard, chip, chipText, scoreColor } from '../theme';
 
-function scoreColor(score) {
-  if (score >= 60) return '#22c55e'; // green
-  if (score >= 30) return '#eab308'; // yellow
-  return '#f97316'; // orange
-}
-
-// One food card: name, heart, score badge, nutrient chips, evidence.
+// One food card: name, heart, score ring, nutrient chips, evidence.
 // `food` = { fdcId, name, score, nutrients, evidence }
 export default function FoodCard({ food, onPress }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const saved = isFavorite(food.fdcId);
+  const ring = scoreColor(food.score);
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.65} onPress={onPress}>
       <View style={styles.cardHeader}>
-        <Text style={styles.foodName}>{food.name}</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.foodName}>{food.name}</Text>
+          <Text style={styles.evidence}>{food.evidence}</Text>
+        </View>
         <TouchableOpacity
           onPress={() => toggleFavorite(food)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel={saved ? 'Remove from saved' : 'Save food'}
+          style={styles.heart}
         >
           <Ionicons
             name={saved ? 'heart' : 'heart-outline'}
-            size={22}
-            color={saved ? '#ef4444' : '#6b7280'}
+            size={20}
+            color={saved ? colors.heart : colors.textTertiary}
           />
         </TouchableOpacity>
-        <View
-          style={[styles.scoreBadge, { backgroundColor: scoreColor(food.score) }]}
-        >
-          <Text style={styles.scoreText}>{food.score}</Text>
+        <View style={[styles.scoreRing, { borderColor: ring }]}>
+          <Text style={[styles.scoreText, { color: ring }]}>{food.score}</Text>
         </View>
       </View>
       {food.nutrients.length > 0 && (
@@ -44,60 +42,60 @@ export default function FoodCard({ food, onPress }) {
           ))}
         </View>
       )}
-      <Text style={styles.evidence}>Evidence: {food.evidence}</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1f2937',
-    borderRadius: 14,
-    padding: 16,
+    ...glassCard,
     marginBottom: 12,
   },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
-  foodName: {
-    color: '#f9fafb',
-    fontSize: 18,
-    fontWeight: '700',
+  titleBlock: {
     flex: 1,
   },
-  scoreBadge: {
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+  foodName: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  evidence: {
+    color: colors.textTertiary,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  heart: {
+    padding: 2,
+  },
+  scoreRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
   },
   scoreText: {
-    color: '#111827',
-    fontWeight: '900',
     fontSize: 16,
+    fontWeight: '800',
   },
   nutrientRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 10,
+    marginTop: 12,
     gap: 6,
   },
   nutrientChip: {
-    backgroundColor: '#374151',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    ...chip,
   },
   nutrientText: {
-    color: '#d1d5db',
-    fontSize: 12,
-  },
-  evidence: {
-    color: '#9ca3af',
-    fontSize: 12,
-    marginTop: 10,
-    fontStyle: 'italic',
+    ...chipText,
   },
 });

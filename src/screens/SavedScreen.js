@@ -2,14 +2,16 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../store/favorites';
 import FoodCard from '../components/FoodCard';
+import Screen from '../components/Screen';
+import { colors, screenSubtitle, screenTitle, spacing } from '../theme';
 
 export default function SavedScreen({ navigation }) {
   const { favorites } = useFavorites();
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <View style={styles.header}>
-        <Text style={styles.title}>Saved Foods</Text>
+        <Text style={styles.title}>Saved</Text>
         <Text style={styles.subtitle}>
           Your go-to foods, ready for the next grocery run
         </Text>
@@ -33,39 +35,31 @@ export default function SavedScreen({ navigation }) {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            <Ionicons name="heart-outline" size={40} color="#374151" />
+            <Ionicons name="heart-outline" size={38} color={colors.textTertiary} />
             <Text style={styles.emptyText}>
               Nothing saved yet. Tap the heart on any food to keep it here.
             </Text>
           </View>
         }
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111827',
-  },
   header: {
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: 24,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: 18,
   },
   title: {
-    color: '#f9fafb',
-    fontSize: 26,
-    fontWeight: '900',
+    ...screenTitle,
   },
   subtitle: {
-    color: '#9ca3af',
-    fontSize: 13,
-    marginTop: 4,
+    ...screenSubtitle,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screen,
     paddingBottom: 40,
     flexGrow: 1,
   },
@@ -76,7 +70,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyText: {
-    color: '#6b7280',
+    color: colors.textTertiary,
     fontSize: 14,
     textAlign: 'center',
     marginTop: 12,
