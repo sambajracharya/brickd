@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { getNearbyStores, formatDistance } from '../api/stores';
+import { getNearbyStores, formatDistance, CUISINE_LABELS } from '../api/stores';
 
 function StoreCard({ store, onPress }) {
   return (
@@ -21,6 +21,11 @@ function StoreCard({ store, onPress }) {
         <View style={styles.typeChip}>
           <Text style={styles.typeText}>{store.type}</Text>
         </View>
+        {store.cuisine && (
+          <View style={[styles.typeChip, styles.cuisineChip]}>
+            <Text style={styles.cuisineText}>{CUISINE_LABELS[store.cuisine]}</Text>
+          </View>
+        )}
         {store.address && <Text style={styles.address}>{store.address}</Text>}
       </View>
       {store.openingHours && (
@@ -208,6 +213,14 @@ const styles = StyleSheet.create({
   typeText: {
     color: '#d1d5db',
     fontSize: 12,
+  },
+  cuisineChip: {
+    backgroundColor: '#164e2e',
+  },
+  cuisineText: {
+    color: '#4ade80',
+    fontSize: 12,
+    fontWeight: '700',
   },
   address: {
     color: '#9ca3af',

@@ -18,6 +18,52 @@ const SHOP_LABELS = {
   farm: 'Farm Shop',
 };
 
+// ---- Cuisine detection from store names -------------------------------
+//
+// Ethnic grocery stores usually announce their cuisine in the name
+// ("Desi Bazaar", "H Mart", "El Progreso", "Mediterranean Market").
+// OSM rarely tags this, so a keyword heuristic on the name is the
+// practical approach. It won't catch everything — undetected stores
+// just fall back to the store-type food list.
+const CUISINE_KEYWORDS = {
+  southAsian: [
+    'desi', 'bazaar', 'bazar', 'india', 'indian', 'bombay', 'mumbai',
+    'delhi', 'punjab', 'punjabi', 'patel', 'apna', 'swad', 'bengal',
+    'karachi', 'lahore', 'nepal', 'himalayan',
+  ],
+  eastAsian: [
+    'h mart', 'hmart', 'asia', 'asian', 'oriental', 'far east', 'china',
+    'chinese', '99 ranch', 'korea', 'korean', 'japan', 'japanese',
+    'tokyo', 'seoul', 'viet', 'saigon', 'thai', 'manila', 'filipino',
+    'lotte', 'hong kong',
+  ],
+  latinAmerican: [
+    'mercado', 'supermercado', 'carniceria', 'tienda', 'latino', 'latina',
+    'mexico', 'mexican', 'azteca', 'jalisco', 'michoacan', 'progreso',
+    'guadalajara', 'la placita', 'bodega',
+  ],
+  middleEastern: [
+    'halal', 'mediterranean', 'kabob', 'kebab', 'shawarma', 'babylon',
+    'istanbul', 'cedar', 'aleppo', 'damascus', 'persian', 'tehran',
+    'jerusalem', 'petra', 'holy land',
+  ],
+};
+
+export const CUISINE_LABELS = {
+  southAsian: 'South Asian',
+  eastAsian: 'East Asian',
+  latinAmerican: 'Latin American',
+  middleEastern: 'Middle Eastern',
+};
+
+export function detectCuisine(storeName) {
+  const name = (storeName || '').toLowerCase();
+  for (const [cuisine, keywords] of Object.entries(CUISINE_KEYWORDS)) {
+    if (keywords.some((kw) => name.includes(kw))) return cuisine;
+  }
+  return null;
+}
+
 export async function getNearbyStores(latitude, longitude, radiusMeters = 8000) {
   const query = `
     [out:json][timeout:15];
@@ -48,6 +94,7 @@ export async function getNearbyStores(latitude, longitude, radiusMeters = 8000) 
       id: `${el.type}-${el.id}`,
       name: tags.name,
       type: SHOP_LABELS[tags.shop] || 'Grocery',
+      cuisine: detectCuisine(tags.name),
       address: buildAddress(tags),
       openingHours: tags.opening_hours || null,
       distanceKm: haversineKm(latitude, longitude, lat, lon),

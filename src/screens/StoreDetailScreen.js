@@ -1,12 +1,22 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { getFoodsForStoreType, CURATED_FOODS } from '../data/curatedFoods';
+import { getFoodsForStore } from '../data/curatedFoods';
 import FoodCard from '../components/FoodCard';
-import { formatDistance } from '../api/stores';
+import { formatDistance, CUISINE_LABELS } from '../api/stores';
+
+// Explains where the list came from, honestly.
+function basisText(basis, store) {
+  if (basis === 'cuisine') {
+    return `Staples of ${CUISINE_LABELS[store.cuisine]} cooking that support the nutrients Brick'd scores. `;
+  }
+  if (basis === 'type') {
+    return `Based on what ${store.type.toLowerCase()} stores typically carry. `;
+  }
+  return "Brick'd doesn't have a curated list for this store type yet, so here are our top-scoring foods overall. ";
+}
 
 export default function StoreDetailScreen({ route, navigation }) {
   const { store } = route.params;
-  const foods = getFoodsForStoreType(store.type);
-  const isFallback = !CURATED_FOODS.some((f) => f.storeTypes.includes(store.type));
+  const { foods, basis } = getFoodsForStore(store);
 
   return (
     <FlatList
@@ -34,6 +44,13 @@ export default function StoreDetailScreen({ route, navigation }) {
               <View style={styles.typeChip}>
                 <Text style={styles.typeText}>{store.type}</Text>
               </View>
+              {store.cuisine && (
+                <View style={[styles.typeChip, styles.cuisineChip]}>
+                  <Text style={styles.cuisineText}>
+                    {CUISINE_LABELS[store.cuisine]}
+                  </Text>
+                </View>
+              )}
               <Text style={styles.distance}>
                 {formatDistance(store.distanceKm)}
               </Text>
@@ -51,9 +68,7 @@ export default function StoreDetailScreen({ route, navigation }) {
               Foods commonly found here
             </Text>
             <Text style={styles.disclaimerText}>
-              {isFallback
-                ? "Brick'd doesn't have a curated list for this store type yet, so here are our top-scoring foods overall. "
-                : `Based on what ${store.type.toLowerCase()} stores typically carry. `}
+              {basisText(basis, store)}
               This isn't this store's real-time stock — no public data
               source provides that for most grocery stores.
             </Text>
@@ -97,6 +112,14 @@ const styles = StyleSheet.create({
   typeText: {
     color: '#d1d5db',
     fontSize: 12,
+  },
+  cuisineChip: {
+    backgroundColor: '#164e2e',
+  },
+  cuisineText: {
+    color: '#4ade80',
+    fontSize: 12,
+    fontWeight: '700',
   },
   distance: {
     color: '#22c55e',
