@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
@@ -9,11 +10,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { searchFoods } from './src/api/usda';
 
-// Temporary hardcoded data — later this comes from the USDA FoodData Central API.
+// Curated picks shown before the user searches.
 // Evidence levels are honest: "strong" only where research actually supports it
 // (i.e., correcting a deficiency), "moderate"/"supportive" otherwise.
-const FOODS = [
+const FEATURED_FOODS = [
   {
     id: '1',
     name: 'Oysters',
@@ -66,8 +68,8 @@ const FOODS = [
 ];
 
 function scoreColor(score) {
-  if (score >= 85) return '#22c55e'; // green
-  if (score >= 75) return '#eab308'; // yellow
+  if (score >= 60) return '#22c55e'; // green
+  if (score >= 30) return '#eab308'; // yellow
   return '#f97316'; // orange
 }
 
@@ -80,13 +82,15 @@ function FoodCard({ food }) {
           <Text style={styles.scoreText}>{food.score}</Text>
         </View>
       </View>
-      <View style={styles.nutrientRow}>
-        {food.nutrients.map((n) => (
-          <View key={n} style={styles.nutrientChip}>
-            <Text style={styles.nutrientText}>{n}</Text>
-          </View>
-        ))}
-      </View>
+      {food.nutrients.length > 0 && (
+        <View style={styles.nutrientRow}>
+          {food.nutrients.map((n) => (
+            <View key={n} style={styles.nutrientChip}>
+              <Text style={styles.nutrientText}>{n}</Text>
+            </View>
+          ))}
+        </View>
+      )}
       <Text style={styles.evidence}>Evidence: {food.evidence}</Text>
     </TouchableOpacity>
   );
@@ -94,10 +98,41 @@ function FoodCard({ food }) {
 
 export default function App() {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState(null); // null = show featured list
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const debounceRef = useRef(null);
 
-  const filtered = FOODS.filter((f) =>
-    f.name.toLowerCase().includes(query.toLowerCase())
-  );
+  // Search the USDA database 500ms after the user stops typing.
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setResults(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const foods = await searchFoods(trimmed);
+        setResults(foods);
+        setError(null);
+      } catch (e) {
+        setError('Could not reach the food database. Check your connection.');
+      } finally {
+        setLoading(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [query]);
+
+  const showingFeatured = results === null;
+  const data = showingFeatured ? FEATURED_FOODS : results;
 
   return (
     <SafeAreaProvider>
@@ -112,21 +147,36 @@ export default function App() {
 
         <TextInput
           style={styles.search}
-          placeholder="Search foods (try 'beef' or 'eggs')..."
+          placeholder="Search 300,000+ foods (try 'oysters')..."
           placeholderTextColor="#9ca3af"
           value={query}
           onChangeText={setQuery}
         />
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <FoodCard food={item} />}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <Text style={styles.empty}>No foods found for "{query}"</Text>
-          }
-        />
+        {error && <Text style={styles.error}>{error}</Text>}
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#22c55e" style={styles.loader} />
+        ) : (
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <FoodCard food={item} />}
+            contentContainerStyle={styles.list}
+            ListHeaderComponent={
+              showingFeatured ? (
+                <Text style={styles.sectionTitle}>Featured picks</Text>
+              ) : (
+                <Text style={styles.sectionTitle}>
+                  USDA results for "{query.trim()}"
+                </Text>
+              )
+            }
+            ListEmptyComponent={
+              <Text style={styles.empty}>No foods found for "{query}"</Text>
+            }
+          />
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -163,6 +213,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 16,
   },
+  sectionTitle: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  loader: {
+    marginTop: 40,
+  },
+  error: {
+    color: '#f87171',
+    marginHorizontal: 20,
+    marginBottom: 8,
+    fontSize: 13,
+  },
   list: {
     paddingHorizontal: 20,
     paddingBottom: 40,
@@ -188,6 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,
+    marginLeft: 10,
   },
   scoreText: {
     color: '#111827',
