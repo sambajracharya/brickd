@@ -10,9 +10,9 @@ import {
 import * as Location from 'expo-location';
 import { getNearbyStores, formatDistance } from '../api/stores';
 
-function StoreCard({ store }) {
+function StoreCard({ store, onPress }) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
       <View style={styles.cardHeader}>
         <Text style={styles.storeName}>{store.name}</Text>
         <Text style={styles.distance}>{formatDistance(store.distanceKm)}</Text>
@@ -26,11 +26,12 @@ function StoreCard({ store }) {
       {store.openingHours && (
         <Text style={styles.hours}>Hours: {store.openingHours}</Text>
       )}
-    </View>
+      <Text style={styles.viewFoods}>See foods commonly found here →</Text>
+    </TouchableOpacity>
   );
 }
 
-export default function StoresScreen() {
+export default function StoresScreen({ navigation }) {
   const [status, setStatus] = useState('loading'); // loading | denied | error | ready
   const [stores, setStores] = useState([]);
 
@@ -103,7 +104,12 @@ export default function StoresScreen() {
         <FlatList
           data={stores}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <StoreCard store={item} />}
+          renderItem={({ item }) => (
+            <StoreCard
+              store={item}
+              onPress={() => navigation.navigate('StoreDetail', { store: item })}
+            />
+          )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <Text style={styles.centerText}>
@@ -212,5 +218,11 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 12,
     marginTop: 8,
+  },
+  viewFoods: {
+    color: '#22c55e',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 10,
   },
 });
