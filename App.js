@@ -8,6 +8,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import FoodDetailScreen from './src/screens/FoodDetailScreen';
 import StoresScreen from './src/screens/StoresScreen';
 import ScanScreen from './src/screens/ScanScreen';
+import SavedScreen from './src/screens/SavedScreen';
+import { FavoritesProvider } from './src/store/favorites';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -24,7 +26,7 @@ const theme = {
   },
 };
 
-// The Home tab is a stack: food list -> food detail.
+// The Foods tab is a stack: food list -> food detail.
 function HomeStack() {
   return (
     <Stack.Navigator>
@@ -42,28 +44,55 @@ function HomeStack() {
   );
 }
 
+// Saved gets its own stack so tapping a saved food opens details too.
+function SavedStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="SavedList"
+        component={SavedScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FoodDetail"
+        component={FoodDetailScreen}
+        options={{ title: '', headerBackTitle: 'Back' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+const TAB_ICONS = {
+  Foods: 'nutrition',
+  Scan: 'barcode',
+  Saved: 'heart',
+  Stores: 'storefront',
+};
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <NavigationContainer theme={theme}>
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            tabBarStyle: { backgroundColor: '#1f2937', borderTopColor: '#374151' },
-            tabBarActiveTintColor: '#22c55e',
-            tabBarInactiveTintColor: '#6b7280',
-            tabBarIcon: ({ color, size }) => {
-              const icons = { Foods: 'nutrition', Scan: 'barcode', Stores: 'storefront' };
-              return <Ionicons name={icons[route.name]} size={size} color={color} />;
-            },
-          })}
-        >
-          <Tab.Screen name="Foods" component={HomeStack} />
-          <Tab.Screen name="Scan" component={ScanScreen} />
-          <Tab.Screen name="Stores" component={StoresScreen} />
-        </Tab.Navigator>
-      </NavigationContainer>
+      <FavoritesProvider>
+        <StatusBar style="light" />
+        <NavigationContainer theme={theme}>
+          <Tab.Navigator
+            screenOptions={({ route }) => ({
+              headerShown: false,
+              tabBarStyle: { backgroundColor: '#1f2937', borderTopColor: '#374151' },
+              tabBarActiveTintColor: '#22c55e',
+              tabBarInactiveTintColor: '#6b7280',
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name={TAB_ICONS[route.name]} size={size} color={color} />
+              ),
+            })}
+          >
+            <Tab.Screen name="Foods" component={HomeStack} />
+            <Tab.Screen name="Scan" component={ScanScreen} />
+            <Tab.Screen name="Saved" component={SavedStack} />
+            <Tab.Screen name="Stores" component={StoresScreen} />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </FavoritesProvider>
     </SafeAreaProvider>
   );
 }
