@@ -26,6 +26,12 @@
         {
           "locationWhenInUsePermission": "Brick'd uses your location to find grocery stores near you."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Brick'd uses your camera to scan product barcodes and look up their nutrition."
+        }
       ]
     ]
   }

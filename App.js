@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from './src/screens/HomeScreen';
 import FoodDetailScreen from './src/screens/FoodDetailScreen';
 import StoresScreen from './src/screens/StoresScreen';
+import ScanScreen from './src/screens/ScanScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -53,12 +54,13 @@ export default function App() {
             tabBarActiveTintColor: '#22c55e',
             tabBarInactiveTintColor: '#6b7280',
             tabBarIcon: ({ color, size }) => {
-              const icon = route.name === 'Foods' ? 'nutrition' : 'storefront';
-              return <Ionicons name={icon} size={size} color={color} />;
+              const icons = { Foods: 'nutrition', Scan: 'barcode', Stores: 'storefront' };
+              return <Ionicons name={icons[route.name]} size={size} color={color} />;
             },
           })}
         >
           <Tab.Screen name="Foods" component={HomeStack} />
+          <Tab.Screen name="Scan" component={ScanScreen} />
           <Tab.Screen name="Stores" component={StoresScreen} />
         </Tab.Navigator>
       </NavigationContainer>
