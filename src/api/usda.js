@@ -29,14 +29,39 @@ const NUTRIENT_IDS = {
 // Each nutrient earns points in proportion to how close 100g of the food
 // gets you to a meaningful daily amount, capped at the weight below.
 // Targets are based on adult male RDAs / typical study intakes.
-const SCORING = [
-  // key         weight  target per 100g to earn full points
-  { key: 'zinc', weight: 25, target: 5 }, // RDA ~11mg/day
-  { key: 'protein', weight: 25, target: 25 }, // supports hormone production
-  { key: 'vitaminD', weight: 20, target: 5 }, // RDA ~15-20µg/day
-  { key: 'magnesium', weight: 15, target: 100 }, // RDA ~400mg/day
-  { key: 'selenium', weight: 15, target: 28 }, // RDA ~55µg/day
+export const SCORING = [
+  // key         weight  target per 100g   display
+  { key: 'zinc', weight: 25, target: 5, label: 'Zinc', unit: 'mg' },
+  { key: 'protein', weight: 25, target: 25, label: 'Protein', unit: 'g' },
+  { key: 'vitaminD', weight: 20, target: 5, label: 'Vitamin D', unit: 'µg' },
+  { key: 'magnesium', weight: 15, target: 100, label: 'Magnesium', unit: 'mg' },
+  { key: 'selenium', weight: 15, target: 28, label: 'Selenium', unit: 'µg' },
 ];
+
+// Honest, plain-language summary of the research behind each nutrient.
+// Shown on the food detail screen.
+export const RESEARCH_NOTES = {
+  zinc: {
+    strength: 'Strong (for deficiency)',
+    text: 'Randomized trials show that correcting zinc deficiency restores testosterone in deficient men. Extra zinc does NOT raise testosterone in men who already get enough.',
+  },
+  protein: {
+    strength: 'Moderate',
+    text: 'Adequate protein supports hormone production and muscle. Severe protein restriction lowers testosterone; very high intake has no proven extra benefit.',
+  },
+  vitaminD: {
+    strength: 'Moderate (for deficiency)',
+    text: 'Low vitamin D is associated with lower testosterone. Supplementation studies show mixed results — the benefit appears mainly in men who are deficient.',
+  },
+  magnesium: {
+    strength: 'Emerging',
+    text: 'Some studies link better magnesium status to higher testosterone, especially in physically active men. Evidence is promising but limited.',
+  },
+  selenium: {
+    strength: 'Limited',
+    text: 'Selenium is essential for male reproductive health. Direct evidence for testosterone effects is limited.',
+  },
+};
 
 export function computeBrickdScore(nutrients) {
   let total = 0;
@@ -46,6 +71,22 @@ export function computeBrickdScore(nutrients) {
     total += Math.min(value / target, 1) * weight;
   }
   return Math.round(total);
+}
+
+// Per-nutrient breakdown for the detail screen:
+// [{ key, label, unit, value, points, maxPoints }]
+export function computeBreakdown(nutrients) {
+  return SCORING.map(({ key, weight, target, label, unit }) => {
+    const value = nutrients[key] || 0;
+    return {
+      key,
+      label,
+      unit,
+      value: round1(value),
+      points: Math.round(Math.min(value / target, 1) * weight),
+      maxPoints: weight,
+    };
+  });
 }
 
 // Honest evidence label based on which nutrients drive the score.
@@ -78,7 +119,7 @@ function round1(n) {
   return Math.round(n * 10) / 10;
 }
 
-// ---- Search -----------------------------------------------------------
+// ---- API calls --------------------------------------------------------
 
 export async function searchFoods(query) {
   const params = new URLSearchParams({
@@ -96,7 +137,7 @@ export async function searchFoods(query) {
   }
   const data = await res.json();
 
-  return (data.foods || []).map((food) => {
+  const results = (data.foods || []).map((food) => {
     // Flatten USDA's nutrient list into { protein: 20.5, zinc: 4.2, ... }
     const nutrients = {};
     for (const [key, id] of Object.entries(NUTRIENT_IDS)) {
@@ -108,15 +149,48 @@ export async function searchFoods(query) {
 
     return {
       id: String(food.fdcId),
+      fdcId: food.fdcId,
       name: titleCase(food.description),
       score: computeBrickdScore(nutrients),
       nutrients: nutrientChips(nutrients),
       evidence: evidenceLabel(nutrients),
     };
   });
+
+  // Best testosterone-supporting foods first.
+  return results.sort((a, b) => b.score - a.score);
 }
 
-// USDA descriptions are ALL CAPS-ish, e.g. "Beef, ground, 90% lean meat..."
+// Fetch one food by its USDA id and return everything the detail
+// screen needs. (The /food/{id} response nests nutrients differently
+// than search results: n.nutrient.id instead of n.nutrientId.)
+export async function getFoodDetails(fdcId) {
+  const res = await fetch(`${BASE_URL}/food/${fdcId}?api_key=${API_KEY}`);
+  if (!res.ok) {
+    throw new Error(`USDA API error: ${res.status}`);
+  }
+  const food = await res.json();
+
+  const nutrients = {};
+  for (const [key, id] of Object.entries(NUTRIENT_IDS)) {
+    const match = (food.foodNutrients || []).find(
+      (n) => n.nutrient?.id === id
+    );
+    if (match && typeof match.amount === 'number') {
+      nutrients[key] = match.amount;
+    }
+  }
+
+  return {
+    fdcId,
+    name: titleCase(food.description),
+    score: computeBrickdScore(nutrients),
+    evidence: evidenceLabel(nutrients),
+    breakdown: computeBreakdown(nutrients),
+  };
+}
+
+// USDA descriptions are lowercase-ish, e.g. "Beef, ground, 90% lean meat..."
 function titleCase(s) {
   return s
     .toLowerCase()
