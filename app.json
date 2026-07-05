@@ -33,7 +33,8 @@
           "cameraPermission": "Brick'd uses your camera to scan product barcodes and look up their nutrition."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ]
   }
 }

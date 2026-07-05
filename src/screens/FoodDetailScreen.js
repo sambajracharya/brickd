@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -9,19 +9,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { getFoodDetails, RESEARCH_NOTES } from '../api/usda';
 import Screen from '../components/Screen';
-import {
-  colors,
-  glassCard,
-  scoreColor,
-  sectionLabel,
-  spacing,
-} from '../theme';
+import { useTheme } from '../store/theme';
+import { spacing } from '../theme';
 
 // One row of the "Why this score" section: label, amount, points earned,
 // and a gradient progress bar showing points / maxPoints.
-function BreakdownRow({ item }) {
+function BreakdownRow({ item, t, styles }) {
   const pct = item.maxPoints > 0 ? item.points / item.maxPoints : 0;
-  const tint = scoreColor(pct * 100);
+  const tint = t.scoreColor(pct * 100);
   return (
     <View style={styles.row}>
       <View style={styles.rowTop}>
@@ -47,6 +42,8 @@ function BreakdownRow({ item }) {
 }
 
 export default function FoodDetailScreen({ route }) {
+  const t = useTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   // Passed from the card so the screen renders instantly...
   const { fdcId, name, score } = route.params;
   // ...while the full breakdown loads from the USDA.
@@ -64,7 +61,7 @@ export default function FoodDetailScreen({ route }) {
   }, [fdcId]);
 
   const displayScore = details ? details.score : score;
-  const ring = scoreColor(displayScore);
+  const ring = t.scoreColor(displayScore);
 
   return (
     <Screen>
@@ -85,7 +82,7 @@ export default function FoodDetailScreen({ route }) {
         {!details && !error && (
           <ActivityIndicator
             size="large"
-            color={colors.accent}
+            color={t.colors.accent}
             style={{ marginTop: 24 }}
           />
         )}
@@ -95,7 +92,7 @@ export default function FoodDetailScreen({ route }) {
             <Text style={styles.sectionTitle}>Why this score</Text>
             <View style={styles.cardBlock}>
               {details.breakdown.map((item) => (
-                <BreakdownRow key={item.key} item={item} />
+                <BreakdownRow key={item.key} item={item} t={t} styles={styles} />
               ))}
               <Text style={styles.methodNote}>
                 Points reflect how far 100g gets you toward daily intakes
@@ -137,136 +134,141 @@ export default function FoodDetailScreen({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: spacing.screen,
-    paddingBottom: 60,
-  },
-  scoreHero: {
-    alignItems: 'center',
-    marginBottom: 26,
-  },
-  scoreHalo: {
-    shadowOpacity: 0.55,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 12,
-    borderRadius: 62,
-    marginBottom: 16,
-  },
-  scoreCircle: {
-    width: 124,
-    height: 124,
-    borderRadius: 62,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  scoreBig: {
-    color: colors.text,
-    fontSize: 42,
-    fontWeight: '800',
-    letterSpacing: -1,
-  },
-  scoreOutOf: {
-    color: colors.textTertiary,
-    fontSize: 12,
-    marginTop: -2,
-  },
-  foodName: {
-    color: colors.text,
-    fontSize: 21,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  scoreCaption: {
-    color: colors.textTertiary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.6,
-    marginTop: 6,
-  },
-  sectionTitle: {
-    ...sectionLabel,
-    marginBottom: 10,
-    marginTop: 8,
-  },
-  cardBlock: {
-    ...glassCard,
-    marginBottom: 22,
-  },
-  row: {
-    marginBottom: 15,
-  },
-  rowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 7,
-  },
-  rowLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-    flex: 1,
-  },
-  rowValue: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginRight: 12,
-  },
-  rowPoints: {
-    fontSize: 12,
-    fontWeight: '800',
-    width: 44,
-    textAlign: 'right',
-  },
-  barTrack: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  methodNote: {
-    color: colors.textTertiary,
-    fontSize: 12,
-    fontStyle: 'italic',
-    marginTop: 4,
-    lineHeight: 17,
-  },
-  researchItem: {
-    marginBottom: 18,
-  },
-  researchHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  researchLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  researchStrength: {
-    color: colors.accent,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  researchText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  error: {
-    color: colors.danger,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-});
+function createStyles(t) {
+  const { colors } = t;
+  return StyleSheet.create({
+    content: {
+      padding: spacing.screen,
+      // Extra room because the transparent nav header floats above.
+      paddingTop: 56,
+      paddingBottom: 60,
+    },
+    scoreHero: {
+      alignItems: 'center',
+      marginBottom: 26,
+    },
+    scoreHalo: {
+      shadowOpacity: 0.55,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: 12,
+      borderRadius: 62,
+      marginBottom: 16,
+    },
+    scoreCircle: {
+      width: 124,
+      height: 124,
+      borderRadius: 62,
+      borderWidth: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.ringBg,
+    },
+    scoreBig: {
+      color: colors.text,
+      fontSize: 42,
+      fontWeight: '800',
+      letterSpacing: -1,
+    },
+    scoreOutOf: {
+      color: colors.textTertiary,
+      fontSize: 12,
+      marginTop: -2,
+    },
+    foodName: {
+      color: colors.text,
+      fontSize: 21,
+      fontWeight: '700',
+      textAlign: 'center',
+      letterSpacing: -0.3,
+    },
+    scoreCaption: {
+      color: colors.textTertiary,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 1.6,
+      marginTop: 6,
+    },
+    sectionTitle: {
+      ...t.sectionLabel,
+      marginBottom: 10,
+      marginTop: 8,
+    },
+    cardBlock: {
+      ...t.glassCard,
+      marginBottom: 22,
+    },
+    row: {
+      marginBottom: 15,
+    },
+    rowTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 7,
+    },
+    rowLabel: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+      flex: 1,
+    },
+    rowValue: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginRight: 12,
+    },
+    rowPoints: {
+      fontSize: 12,
+      fontWeight: '800',
+      width: 44,
+      textAlign: 'right',
+    },
+    barTrack: {
+      height: 6,
+      backgroundColor: colors.inputBg,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    barFill: {
+      height: '100%',
+      borderRadius: 3,
+    },
+    methodNote: {
+      color: colors.textTertiary,
+      fontSize: 12,
+      fontStyle: 'italic',
+      marginTop: 4,
+      lineHeight: 17,
+    },
+    researchItem: {
+      marginBottom: 18,
+    },
+    researchHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 5,
+    },
+    researchLabel: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    researchStrength: {
+      color: colors.accent,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    researchText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    error: {
+      color: colors.danger,
+      textAlign: 'center',
+      marginTop: 20,
+    },
+  });
+}

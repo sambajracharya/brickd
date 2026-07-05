@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -12,23 +12,15 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { lookupBarcode } from '../api/openfoodfacts';
 import Screen from '../components/Screen';
-import {
-  buttonPrimary,
-  buttonPrimaryText,
-  colors,
-  glassCard,
-  input,
-  scoreColor,
-  sectionLabel,
-  screenTitle,
-  screenSubtitle,
-  spacing,
-} from '../theme';
+import { useTheme } from '../store/theme';
+import { spacing } from '../theme';
 
 // Camera barcode scanning isn't supported on web — manual entry only.
 const CAMERA_SUPPORTED = Platform.OS !== 'web';
 
 export default function ScanScreen() {
+  const t = useTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState('idle'); // idle | looking | result | notfound | error
   const [product, setProduct] = useState(null);
@@ -67,7 +59,7 @@ export default function ScanScreen() {
   };
 
   const showCamera = CAMERA_SUPPORTED && permission?.granted && mode === 'idle';
-  const ring = product ? scoreColor(product.score) : colors.accent;
+  const ring = product ? t.scoreColor(product.score) : t.colors.accent;
 
   return (
     <Screen>
@@ -119,7 +111,7 @@ export default function ScanScreen() {
             <TextInput
               style={styles.manualInput}
               placeholder="Barcode number..."
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor={t.colors.textTertiary}
               keyboardType="number-pad"
               value={manualCode}
               onChangeText={setManualCode}
@@ -136,7 +128,7 @@ export default function ScanScreen() {
 
         {mode === 'looking' && (
           <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={colors.accent} />
+            <ActivityIndicator size="large" color={t.colors.accent} />
             <Text style={styles.centerText}>Looking up product...</Text>
           </View>
         )}
@@ -207,7 +199,11 @@ export default function ScanScreen() {
                     <Text
                       style={[
                         styles.breakPoints,
-                        { color: scoreColor((item.points / item.maxPoints) * 100) },
+                        {
+                          color: t.scoreColor(
+                            (item.points / item.maxPoints) * 100
+                          ),
+                        },
                       ]}
                     >
                       {item.points}/{item.maxPoints}
@@ -231,167 +227,170 @@ export default function ScanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    paddingBottom: 60,
-  },
-  header: {
-    paddingTop: 24,
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 18,
-  },
-  title: {
-    ...screenTitle,
-  },
-  subtitle: {
-    ...screenSubtitle,
-  },
-  cameraBox: {
-    ...glassCard,
-    marginHorizontal: spacing.screen,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  camera: {
-    width: '100%',
-    height: 260,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  cameraHint: {
-    color: colors.textTertiary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.4,
-    marginTop: 12,
-  },
-  manualRow: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.screen,
-    gap: 10,
-    alignItems: 'center',
-  },
-  manualInput: {
-    ...input,
-    flex: 1,
-  },
-  centerBox: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    marginTop: 40,
-  },
-  centerText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 12,
-    lineHeight: 20,
-  },
-  button: {
-    ...buttonPrimary,
-    marginTop: 0,
-    alignSelf: 'center',
-    marginVertical: 8,
-  },
-  buttonText: {
-    ...buttonPrimaryText,
-  },
-  resultHero: {
-    alignItems: 'center',
-    marginTop: 14,
-    marginBottom: 22,
-    paddingHorizontal: spacing.screen,
-  },
-  scoreHalo: {
-    shadowOpacity: 0.55,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 12,
-    borderRadius: 56,
-    marginBottom: 14,
-  },
-  scoreCircle: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  scoreBig: {
-    color: colors.text,
-    fontSize: 38,
-    fontWeight: '800',
-    letterSpacing: -1,
-  },
-  scoreOutOf: {
-    color: colors.textTertiary,
-    fontSize: 11,
-    marginTop: -2,
-  },
-  productName: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  brand: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  caveatBox: {
-    backgroundColor: colors.warnDim,
-    borderColor: colors.warnBorder,
-    borderWidth: 1,
-    borderRadius: 14,
-    marginHorizontal: spacing.screen,
-    marginBottom: 20,
-    padding: 14,
-  },
-  caveatTitle: {
-    color: colors.warn,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  caveatText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  sectionTitle: {
-    ...sectionLabel,
-    marginBottom: 10,
-    marginHorizontal: spacing.screen,
-  },
-  cardBlock: {
-    ...glassCard,
-    marginHorizontal: spacing.screen,
-    marginBottom: 14,
-  },
-  breakRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  breakLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-    flex: 1,
-  },
-  breakValue: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginRight: 12,
-  },
-  breakPoints: {
-    fontSize: 12,
-    fontWeight: '800',
-    width: 44,
-    textAlign: 'right',
-  },
-});
+function createStyles(t) {
+  const { colors } = t;
+  return StyleSheet.create({
+    content: {
+      paddingBottom: 60,
+    },
+    header: {
+      paddingTop: 18,
+      paddingHorizontal: spacing.screen,
+      paddingBottom: 18,
+    },
+    title: {
+      ...t.screenTitle,
+    },
+    subtitle: {
+      ...t.screenSubtitle,
+    },
+    cameraBox: {
+      ...t.glassCard,
+      marginHorizontal: spacing.screen,
+      marginBottom: 16,
+      alignItems: 'center',
+    },
+    camera: {
+      width: '100%',
+      height: 260,
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    cameraHint: {
+      color: colors.textTertiary,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 1.4,
+      marginTop: 12,
+    },
+    manualRow: {
+      flexDirection: 'row',
+      marginHorizontal: spacing.screen,
+      gap: 10,
+      alignItems: 'center',
+    },
+    manualInput: {
+      ...t.input,
+      flex: 1,
+    },
+    centerBox: {
+      alignItems: 'center',
+      paddingHorizontal: 32,
+      marginTop: 40,
+    },
+    centerText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 12,
+      lineHeight: 20,
+    },
+    button: {
+      ...t.buttonPrimary,
+      marginTop: 0,
+      alignSelf: 'center',
+      marginVertical: 8,
+    },
+    buttonText: {
+      ...t.buttonPrimaryText,
+    },
+    resultHero: {
+      alignItems: 'center',
+      marginTop: 14,
+      marginBottom: 22,
+      paddingHorizontal: spacing.screen,
+    },
+    scoreHalo: {
+      shadowOpacity: 0.55,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: 12,
+      borderRadius: 56,
+      marginBottom: 14,
+    },
+    scoreCircle: {
+      width: 112,
+      height: 112,
+      borderRadius: 56,
+      borderWidth: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.ringBg,
+    },
+    scoreBig: {
+      color: colors.text,
+      fontSize: 38,
+      fontWeight: '800',
+      letterSpacing: -1,
+    },
+    scoreOutOf: {
+      color: colors.textTertiary,
+      fontSize: 11,
+      marginTop: -2,
+    },
+    productName: {
+      color: colors.text,
+      fontSize: 19,
+      fontWeight: '700',
+      textAlign: 'center',
+      letterSpacing: -0.3,
+    },
+    brand: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      marginTop: 4,
+    },
+    caveatBox: {
+      backgroundColor: colors.warnDim,
+      borderColor: colors.warnBorder,
+      borderWidth: 1,
+      borderRadius: 14,
+      marginHorizontal: spacing.screen,
+      marginBottom: 20,
+      padding: 14,
+    },
+    caveatTitle: {
+      color: colors.warn,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    caveatText: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginTop: 6,
+      lineHeight: 18,
+    },
+    sectionTitle: {
+      ...t.sectionLabel,
+      marginBottom: 10,
+      marginHorizontal: spacing.screen,
+    },
+    cardBlock: {
+      ...t.glassCard,
+      marginHorizontal: spacing.screen,
+      marginBottom: 14,
+    },
+    breakRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    breakLabel: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+      flex: 1,
+    },
+    breakValue: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginRight: 12,
+    },
+    breakPoints: {
+      fontSize: 12,
+      fontWeight: '800',
+      width: 44,
+      textAlign: 'right',
+    },
+  });
+}

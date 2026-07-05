@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,19 +10,10 @@ import {
 import * as Location from 'expo-location';
 import { getNearbyStores, formatDistance, CUISINE_LABELS } from '../api/stores';
 import Screen from '../components/Screen';
-import {
-  buttonPrimary,
-  buttonPrimaryText,
-  chip,
-  chipText,
-  colors,
-  glassCard,
-  screenSubtitle,
-  screenTitle,
-  spacing,
-} from '../theme';
+import { useTheme } from '../store/theme';
+import { spacing } from '../theme';
 
-function StoreCard({ store, onPress }) {
+function StoreCard({ store, onPress, styles }) {
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.65} onPress={onPress}>
       <View style={styles.cardHeader}>
@@ -49,6 +40,8 @@ function StoreCard({ store, onPress }) {
 }
 
 export default function StoresScreen({ navigation }) {
+  const t = useTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const [status, setStatus] = useState('loading'); // loading | denied | error | ready
   const [stores, setStores] = useState([]);
 
@@ -89,7 +82,7 @@ export default function StoresScreen({ navigation }) {
 
       {status === 'loading' && (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={colors.accent} />
+          <ActivityIndicator size="large" color={t.colors.accent} />
           <Text style={styles.centerText}>Finding stores near you...</Text>
         </View>
       )}
@@ -124,6 +117,7 @@ export default function StoresScreen({ navigation }) {
           renderItem={({ item }) => (
             <StoreCard
               store={item}
+              styles={styles}
               onPress={() => navigation.navigate('StoreDetail', { store: item })}
             />
           )}
@@ -139,99 +133,102 @@ export default function StoresScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingTop: 24,
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 18,
-  },
-  title: {
-    ...screenTitle,
-  },
-  subtitle: {
-    ...screenSubtitle,
-  },
-  centerBox: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    marginTop: 48,
-  },
-  centerText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 14,
-    lineHeight: 20,
-  },
-  retryButton: {
-    ...buttonPrimary,
-    marginTop: 18,
-  },
-  retryText: {
-    ...buttonPrimaryText,
-  },
-  list: {
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 40,
-  },
-  card: {
-    ...glassCard,
-    marginBottom: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  storeName: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    flex: 1,
-  },
-  distance: {
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: '800',
-    marginLeft: 10,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: 9,
-    gap: 8,
-  },
-  typeChip: {
-    ...chip,
-  },
-  typeText: {
-    ...chipText,
-  },
-  cuisineChip: {
-    backgroundColor: colors.accentDim,
-    borderColor: colors.accentBorder,
-  },
-  cuisineText: {
-    ...chipText,
-    color: colors.accent,
-    fontWeight: '700',
-  },
-  address: {
-    color: colors.textTertiary,
-    fontSize: 12,
-    flex: 1,
-  },
-  hours: {
-    color: colors.textTertiary,
-    fontSize: 12,
-    marginTop: 8,
-  },
-  viewFoods: {
-    color: colors.accent,
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 12,
-  },
-});
+function createStyles(t) {
+  const { colors } = t;
+  return StyleSheet.create({
+    header: {
+      paddingTop: 18,
+      paddingHorizontal: spacing.screen,
+      paddingBottom: 18,
+    },
+    title: {
+      ...t.screenTitle,
+    },
+    subtitle: {
+      ...t.screenSubtitle,
+    },
+    centerBox: {
+      alignItems: 'center',
+      paddingHorizontal: 32,
+      marginTop: 48,
+    },
+    centerText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 14,
+      lineHeight: 20,
+    },
+    retryButton: {
+      ...t.buttonPrimary,
+      marginTop: 18,
+    },
+    retryText: {
+      ...t.buttonPrimaryText,
+    },
+    list: {
+      paddingHorizontal: spacing.screen,
+      paddingBottom: 40,
+    },
+    card: {
+      ...t.glassCard,
+      marginBottom: 12,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    storeName: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+      flex: 1,
+    },
+    distance: {
+      color: colors.accent,
+      fontSize: 13,
+      fontWeight: '800',
+      marginLeft: 10,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      marginTop: 9,
+      gap: 8,
+    },
+    typeChip: {
+      ...t.chip,
+    },
+    typeText: {
+      ...t.chipText,
+    },
+    cuisineChip: {
+      backgroundColor: colors.accentDim,
+      borderColor: colors.accentBorder,
+    },
+    cuisineText: {
+      ...t.chipText,
+      color: colors.accent,
+      fontWeight: '700',
+    },
+    address: {
+      color: colors.textTertiary,
+      fontSize: 12,
+      flex: 1,
+    },
+    hours: {
+      color: colors.textTertiary,
+      fontSize: 12,
+      marginTop: 8,
+    },
+    viewFoods: {
+      color: colors.accent,
+      fontSize: 12,
+      fontWeight: '700',
+      marginTop: 12,
+    },
+  });
+}

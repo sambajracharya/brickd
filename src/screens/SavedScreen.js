@@ -1,11 +1,15 @@
+import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../store/favorites';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
-import { colors, screenSubtitle, screenTitle, spacing } from '../theme';
+import { useTheme } from '../store/theme';
+import { spacing } from '../theme';
 
 export default function SavedScreen({ navigation }) {
+  const t = useTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const { favorites } = useFavorites();
 
   return (
@@ -35,7 +39,11 @@ export default function SavedScreen({ navigation }) {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            <Ionicons name="heart-outline" size={38} color={colors.textTertiary} />
+            <Ionicons
+              name="heart-outline"
+              size={38}
+              color={t.colors.textTertiary}
+            />
             <Text style={styles.emptyText}>
               Nothing saved yet. Tap the heart on any food to keep it here.
             </Text>
@@ -46,34 +54,36 @@ export default function SavedScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingTop: 24,
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 18,
-  },
-  title: {
-    ...screenTitle,
-  },
-  subtitle: {
-    ...screenSubtitle,
-  },
-  list: {
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 40,
-    flexGrow: 1,
-  },
-  emptyBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyText: {
-    color: colors.textTertiary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 12,
-    lineHeight: 20,
-  },
-});
+function createStyles(t) {
+  return StyleSheet.create({
+    header: {
+      paddingTop: 18,
+      paddingHorizontal: spacing.screen,
+      paddingBottom: 18,
+    },
+    title: {
+      ...t.screenTitle,
+    },
+    subtitle: {
+      ...t.screenSubtitle,
+    },
+    list: {
+      paddingHorizontal: spacing.screen,
+      paddingBottom: 40,
+      flexGrow: 1,
+    },
+    emptyBox: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 40,
+    },
+    emptyText: {
+      color: t.colors.textTertiary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 12,
+      lineHeight: 20,
+    },
+  });
+}

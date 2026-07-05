@@ -1,19 +1,15 @@
-// Brick'd design system. Every screen pulls colors/spacing/effects from
-// here — change the look in one place, not nine.
-//
-// Aesthetic: premium dark health app (Oasis/Whoop-style). Near-black
-// blue-tinted base, translucent "glass" cards with hairline borders,
-// one restrained emerald accent, score shown as colored rings.
+// Brick'd design system. Two palettes (dark/light); buildTheme(mode)
+// produces every color and reusable style token for that mode. Screens
+// never hardcode colors — they call useTheme() (src/store/theme.js).
 
-export const colors = {
-  // Background
-  bg: '#0B0F14', // near-black with a blue tint
-  bgTop: '#131B26', // top of the ambient gradient wash
+const darkColors = {
+  // Background — near true black with a faint blue tint
+  bg: '#04060A',
+  bgTop: '#0A0F16',
 
   // Glass surfaces
   glass: 'rgba(255, 255, 255, 0.055)',
   glassBorder: 'rgba(255, 255, 255, 0.09)',
-  glassPressed: 'rgba(255, 255, 255, 0.10)',
 
   // Text
   text: '#F4F6F8',
@@ -24,6 +20,7 @@ export const colors = {
   accent: '#34D399',
   accentDim: 'rgba(52, 211, 153, 0.14)',
   accentBorder: 'rgba(52, 211, 153, 0.35)',
+  onAccent: '#06281C',
 
   // Semantic
   warn: '#FBBF24',
@@ -38,8 +35,49 @@ export const colors = {
   scoreLow: '#FB923C',
 
   // Chrome
-  tabBar: 'rgba(15, 19, 26, 0.94)',
+  tabBar: 'rgba(8, 11, 16, 0.96)',
   hairline: 'rgba(255, 255, 255, 0.06)',
+  inputBg: 'rgba(255, 255, 255, 0.06)',
+  ringBg: 'rgba(255, 255, 255, 0.03)',
+};
+
+const lightColors = {
+  // Background — crisp white
+  bg: '#FFFFFF',
+  bgTop: '#F3F6FA',
+
+  // "Glass" on white = soft gray cards with hairline borders
+  glass: 'rgba(10, 20, 30, 0.035)',
+  glassBorder: 'rgba(10, 20, 30, 0.08)',
+
+  // Text
+  text: '#0B1220',
+  textSecondary: '#57636F',
+  textTertiary: '#8B95A1',
+
+  // Accent — darker emerald for contrast on white
+  accent: '#059669',
+  accentDim: 'rgba(5, 150, 105, 0.09)',
+  accentBorder: 'rgba(5, 150, 105, 0.30)',
+  onAccent: '#FFFFFF',
+
+  // Semantic
+  warn: '#B45309',
+  warnDim: 'rgba(180, 83, 9, 0.07)',
+  warnBorder: 'rgba(180, 83, 9, 0.25)',
+  danger: '#DC2626',
+  heart: '#E11D48',
+
+  // Score scale — darker tones so they read on white
+  scoreHigh: '#059669',
+  scoreMid: '#D97706',
+  scoreLow: '#EA580C',
+
+  // Chrome
+  tabBar: 'rgba(255, 255, 255, 0.97)',
+  hairline: 'rgba(10, 20, 30, 0.08)',
+  inputBg: 'rgba(10, 20, 30, 0.04)',
+  ringBg: 'rgba(10, 20, 30, 0.02)',
 };
 
 export const radius = {
@@ -54,85 +92,91 @@ export const spacing = {
   card: 18,
 };
 
-export function scoreColor(score) {
-  if (score >= 60) return colors.scoreHigh;
-  if (score >= 30) return colors.scoreMid;
-  return colors.scoreLow;
+export function buildTheme(mode) {
+  const colors = mode === 'light' ? lightColors : darkColors;
+
+  return {
+    mode,
+    colors,
+    radius,
+    spacing,
+
+    scoreColor(score) {
+      if (score >= 60) return colors.scoreHigh;
+      if (score >= 30) return colors.scoreMid;
+      return colors.scoreLow;
+    },
+
+    // The signature surface: translucent card with a hairline border.
+    glassCard: {
+      backgroundColor: colors.glass,
+      borderColor: colors.glassBorder,
+      borderWidth: 1,
+      borderRadius: radius.card,
+      padding: spacing.card,
+    },
+
+    chip: {
+      backgroundColor: colors.glass,
+      borderColor: colors.glassBorder,
+      borderWidth: 1,
+      borderRadius: radius.chip,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+
+    chipText: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+
+    sectionLabel: {
+      color: colors.textTertiary,
+      fontSize: 11,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 1.6,
+    },
+
+    screenTitle: {
+      color: colors.text,
+      fontSize: 28,
+      fontWeight: '800',
+      letterSpacing: -0.5,
+    },
+
+    screenSubtitle: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      marginTop: 4,
+      lineHeight: 18,
+    },
+
+    buttonPrimary: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.button,
+      paddingHorizontal: 24,
+      paddingVertical: 13,
+      alignItems: 'center',
+    },
+
+    buttonPrimaryText: {
+      color: colors.onAccent,
+      fontWeight: '800',
+      fontSize: 14,
+      letterSpacing: 0.2,
+    },
+
+    input: {
+      backgroundColor: colors.inputBg,
+      borderColor: colors.glassBorder,
+      borderWidth: 1,
+      color: colors.text,
+      paddingHorizontal: 16,
+      paddingVertical: 13,
+      borderRadius: radius.input,
+      fontSize: 15,
+    },
+  };
 }
-
-// The signature surface: translucent card with a hairline border.
-export const glassCard = {
-  backgroundColor: colors.glass,
-  borderColor: colors.glassBorder,
-  borderWidth: 1,
-  borderRadius: radius.card,
-  padding: spacing.card,
-};
-
-// Translucent pill chip.
-export const chip = {
-  backgroundColor: 'rgba(255, 255, 255, 0.07)',
-  borderColor: 'rgba(255, 255, 255, 0.08)',
-  borderWidth: 1,
-  borderRadius: radius.chip,
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-};
-
-export const chipText = {
-  color: colors.textSecondary,
-  fontSize: 12,
-  fontWeight: '600',
-};
-
-// Section micro-label: small caps, letter-spaced.
-export const sectionLabel = {
-  color: colors.textTertiary,
-  fontSize: 11,
-  fontWeight: '800',
-  textTransform: 'uppercase',
-  letterSpacing: 1.6,
-};
-
-// Screen titles.
-export const screenTitle = {
-  color: colors.text,
-  fontSize: 28,
-  fontWeight: '800',
-  letterSpacing: -0.5,
-};
-
-export const screenSubtitle = {
-  color: colors.textSecondary,
-  fontSize: 13,
-  marginTop: 4,
-  lineHeight: 18,
-};
-
-// Primary action button.
-export const buttonPrimary = {
-  backgroundColor: colors.accent,
-  borderRadius: radius.button,
-  paddingHorizontal: 24,
-  paddingVertical: 13,
-  alignItems: 'center',
-};
-
-export const buttonPrimaryText = {
-  color: '#06281C',
-  fontWeight: '800',
-  fontSize: 14,
-  letterSpacing: 0.2,
-};
-
-// Text input on glass.
-export const input = {
-  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  borderColor: colors.glassBorder,
-  borderWidth: 1,
-  color: colors.text,
-  paddingHorizontal: 16,
-  paddingVertical: 13,
-  borderRadius: radius.input,
-  fontSize: 15,
-};

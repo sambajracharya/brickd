@@ -1,15 +1,11 @@
+import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { getFoodsForStore } from '../data/curatedFoods';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
 import { formatDistance, CUISINE_LABELS } from '../api/stores';
-import {
-  chip,
-  chipText,
-  colors,
-  sectionLabel,
-  spacing,
-} from '../theme';
+import { useTheme } from '../store/theme';
+import { spacing } from '../theme';
 
 // Explains where the list came from, honestly.
 function basisText(basis, store) {
@@ -23,6 +19,8 @@ function basisText(basis, store) {
 }
 
 export default function StoreDetailScreen({ route, navigation }) {
+  const t = useTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const { store } = route.params;
   const { foods, basis } = getFoodsForStore(store);
 
@@ -82,9 +80,7 @@ export default function StoreDetailScreen({ route, navigation }) {
               </Text>
             </View>
 
-            <Text style={styles.sectionTitle}>
-              Sorted by Brick'd Score
-            </Text>
+            <Text style={styles.sectionTitle}>Sorted by Brick'd Score</Text>
           </View>
         }
       />
@@ -92,80 +88,85 @@ export default function StoreDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 40,
-  },
-  header: {
-    paddingTop: 14,
-    paddingBottom: 12,
-  },
-  storeName: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: 10,
-    gap: 8,
-  },
-  typeChip: {
-    ...chip,
-  },
-  typeText: {
-    ...chipText,
-  },
-  cuisineChip: {
-    backgroundColor: colors.accentDim,
-    borderColor: colors.accentBorder,
-  },
-  cuisineText: {
-    ...chipText,
-    color: colors.accent,
-    fontWeight: '700',
-  },
-  distance: {
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  address: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    marginTop: 10,
-  },
-  hours: {
-    color: colors.textTertiary,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  disclaimer: {
-    backgroundColor: colors.warnDim,
-    borderColor: colors.warnBorder,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  disclaimerTitle: {
-    color: colors.warn,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  disclaimerText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  sectionTitle: {
-    ...sectionLabel,
-    marginBottom: 12,
-  },
-});
+function createStyles(t) {
+  const { colors } = t;
+  return StyleSheet.create({
+    list: {
+      paddingHorizontal: spacing.screen,
+      // Extra room because the transparent nav header floats above.
+      paddingTop: 48,
+      paddingBottom: 40,
+    },
+    header: {
+      paddingTop: 14,
+      paddingBottom: 12,
+    },
+    storeName: {
+      color: colors.text,
+      fontSize: 24,
+      fontWeight: '800',
+      letterSpacing: -0.4,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      marginTop: 10,
+      gap: 8,
+    },
+    typeChip: {
+      ...t.chip,
+    },
+    typeText: {
+      ...t.chipText,
+    },
+    cuisineChip: {
+      backgroundColor: colors.accentDim,
+      borderColor: colors.accentBorder,
+    },
+    cuisineText: {
+      ...t.chipText,
+      color: colors.accent,
+      fontWeight: '700',
+    },
+    distance: {
+      color: colors.accent,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    address: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      marginTop: 10,
+    },
+    hours: {
+      color: colors.textTertiary,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    disclaimer: {
+      backgroundColor: colors.warnDim,
+      borderColor: colors.warnBorder,
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: 14,
+      marginTop: 12,
+      marginBottom: 20,
+    },
+    disclaimerTitle: {
+      color: colors.warn,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    disclaimerText: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginTop: 6,
+      lineHeight: 18,
+    },
+    sectionTitle: {
+      ...t.sectionLabel,
+      marginBottom: 12,
+    },
+  });
+}

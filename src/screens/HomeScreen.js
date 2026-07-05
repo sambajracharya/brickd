@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,12 +10,8 @@ import {
 import { searchFoods } from '../api/usda';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
-import {
-  colors,
-  input,
-  sectionLabel,
-  spacing,
-} from '../theme';
+import { useTheme } from '../store/theme';
+import { spacing } from '../theme';
 
 // Curated picks shown before the user searches. These are REAL USDA
 // entries (fdcId) with scores computed from real lab data — so the card
@@ -80,6 +76,8 @@ const FEATURED_FOODS = [
 ];
 
 export default function HomeScreen({ navigation }) {
+  const t = useTheme();
+  const styles = useMemo(() => createStyles(t), [t]);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null); // null = show featured list
   const [loading, setLoading] = useState(false);
@@ -139,7 +137,7 @@ export default function HomeScreen({ navigation }) {
       <TextInput
         style={styles.search}
         placeholder="Search 300,000+ foods..."
-        placeholderTextColor={colors.textTertiary}
+        placeholderTextColor={t.colors.textTertiary}
         value={query}
         onChangeText={setQuery}
       />
@@ -147,7 +145,11 @@ export default function HomeScreen({ navigation }) {
       {error && <Text style={styles.error}>{error}</Text>}
 
       {loading ? (
-        <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
+        <ActivityIndicator
+          size="large"
+          color={t.colors.accent}
+          style={styles.loader}
+        />
       ) : (
         <FlatList
           data={data}
@@ -172,51 +174,53 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingTop: 24,
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 18,
-  },
-  logo: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: '900',
-    letterSpacing: 3,
-  },
-  logoAccent: {
-    color: colors.accent,
-  },
-  tagline: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    marginTop: 5,
-  },
-  search: {
-    ...input,
-    marginHorizontal: spacing.screen,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    ...sectionLabel,
-    marginBottom: 12,
-  },
-  loader: {
-    marginTop: 40,
-  },
-  error: {
-    color: colors.danger,
-    marginHorizontal: spacing.screen,
-    marginBottom: 8,
-    fontSize: 13,
-  },
-  list: {
-    paddingHorizontal: spacing.screen,
-    paddingBottom: 40,
-  },
-  empty: {
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-});
+function createStyles(t) {
+  return StyleSheet.create({
+    header: {
+      paddingTop: 18,
+      paddingHorizontal: spacing.screen,
+      paddingBottom: 18,
+    },
+    logo: {
+      color: t.colors.text,
+      fontSize: 30,
+      fontWeight: '900',
+      letterSpacing: 3,
+    },
+    logoAccent: {
+      color: t.colors.accent,
+    },
+    tagline: {
+      color: t.colors.textSecondary,
+      fontSize: 13,
+      marginTop: 5,
+    },
+    search: {
+      ...t.input,
+      marginHorizontal: spacing.screen,
+      marginBottom: 14,
+    },
+    sectionTitle: {
+      ...t.sectionLabel,
+      marginBottom: 12,
+    },
+    loader: {
+      marginTop: 40,
+    },
+    error: {
+      color: t.colors.danger,
+      marginHorizontal: spacing.screen,
+      marginBottom: 8,
+      fontSize: 13,
+    },
+    list: {
+      paddingHorizontal: spacing.screen,
+      paddingBottom: 40,
+    },
+    empty: {
+      color: t.colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 40,
+    },
+  });
+}
