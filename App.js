@@ -1,4 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 import {
   NavigationContainer,
   DarkTheme,
@@ -15,9 +16,10 @@ import StoreDetailScreen from './src/screens/StoreDetailScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import SavedScreen from './src/screens/SavedScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import WelcomeScreen from './src/screens/WelcomeScreen';
 import { FavoritesProvider } from './src/store/favorites';
 import { ThemeProvider, useTheme } from './src/store/theme';
-import { AuthProvider } from './src/store/auth';
+import { AuthProvider, useAuth } from './src/store/auth';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -101,6 +103,21 @@ const TAB_ICONS = {
 function AppShell() {
   const t = useTheme();
   const { colors, mode } = t;
+  const auth = useAuth();
+
+  // Login-first (X-style): the welcome screen is the front door.
+  // While the stored session loads, show black to avoid a flash.
+  if (auth.configured && auth.loading) {
+    return <View style={{ flex: 1, backgroundColor: '#000' }} />;
+  }
+  if (auth.configured && !auth.user) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <WelcomeScreen />
+      </>
+    );
+  }
 
   const navTheme = {
     ...(mode === 'light' ? DefaultTheme : DarkTheme),
