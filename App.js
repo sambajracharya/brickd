@@ -17,6 +17,7 @@ import ScanScreen from './src/screens/ScanScreen';
 import SavedScreen from './src/screens/SavedScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { FavoritesProvider } from './src/store/favorites';
 import { ThemeProvider, useTheme } from './src/store/theme';
 import { AuthProvider, useAuth } from './src/store/auth';
@@ -178,14 +179,16 @@ function AppShell() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <FavoritesProvider>
-            <AppShell />
-          </FavoritesProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <FavoritesProvider>
+              <AppShell />
+            </FavoritesProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
