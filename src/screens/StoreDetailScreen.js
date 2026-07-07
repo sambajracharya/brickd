@@ -145,11 +145,7 @@ function createStyles(t) {
       marginTop: 4,
     },
     disclaimer: {
-      backgroundColor: colors.warnDim,
-      borderColor: colors.warnBorder,
-      borderWidth: 1,
-      borderRadius: 14,
-      padding: 14,
+      ...t.warnBox,
       marginTop: 12,
       marginBottom: 20,
     },

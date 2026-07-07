@@ -89,6 +89,22 @@ export default function FoodDetailScreen({ route }) {
 
         {details && (
           <>
+            {details.flags.length > 0 && (
+              <View style={styles.flagsBox}>
+                <Text style={styles.flagsTitle}>Heads up</Text>
+                {details.flags.map((f) => (
+                  <Text key={f.key} style={styles.flagLine}>
+                    {f.label} — {f.detail}
+                  </Text>
+                ))}
+                <Text style={styles.flagsNote}>
+                  Flags never change the score. They surface label facts
+                  linked to the metabolic health that matters most for
+                  testosterone — you decide.
+                </Text>
+              </View>
+            )}
+
             <Text style={styles.sectionTitle}>Why this score</Text>
             <View style={styles.cardBlock}>
               {details.breakdown.map((item) => (
@@ -197,6 +213,28 @@ function createStyles(t) {
     cardBlock: {
       ...t.glassCard,
       marginBottom: 22,
+    },
+    flagsBox: {
+      ...t.warnBox,
+      marginBottom: 22,
+    },
+    flagsTitle: {
+      color: colors.warn,
+      fontSize: 13,
+      fontWeight: '800',
+      marginBottom: 6,
+    },
+    flagLine: {
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    flagsNote: {
+      color: colors.textTertiary,
+      fontSize: 11,
+      fontStyle: 'italic',
+      lineHeight: 16,
+      marginTop: 8,
     },
     row: {
       marginBottom: 15,

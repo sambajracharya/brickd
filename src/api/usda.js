@@ -7,13 +7,33 @@
 const API_KEY = process.env.EXPO_PUBLIC_USDA_API_KEY;
 const BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 
-// USDA nutrient IDs we care about (values are per 100g of food).
+// USDA nutrient IDs (search results) and numbers (abridged detail
+// endpoint) for the scored nutrients. Values are per 100g of food.
 const NUTRIENT_IDS = {
   protein: 1003, // g
   zinc: 1095, // mg
   magnesium: 1090, // mg
   vitaminD: 1114, // µg (D2 + D3)
   selenium: 1103, // µg
+};
+const NUTRIENT_NUMBERS = {
+  protein: '203',
+  zinc: '309',
+  magnesium: '304',
+  vitaminD: '328',
+  selenium: '317',
+};
+
+// Nutrients we WARN about but never score (see computeFlags).
+const FLAG_IDS = {
+  addedSugar: 1235, // g
+  sodium: 1093, // mg
+  satFat: 1258, // g
+};
+const FLAG_NUMBERS = {
+  addedSugar: '539',
+  sodium: '307',
+  satFat: '606',
 };
 
 // ---- Brick'd Score ----------------------------------------------------
@@ -26,16 +46,23 @@ const NUTRIENT_IDS = {
 // So the score answers: "per 100g, how much does this food contribute
 // toward the intakes associated with healthy testosterone production?"
 //
-// Each nutrient earns points in proportion to how close 100g of the food
-// gets you to a meaningful daily amount, capped at the weight below.
-// Targets are based on adult male RDAs / typical study intakes.
+// Weights are RANKED BY EVIDENCE STRENGTH so the math never contradicts
+// the research notes below:
+//   zinc 30      — Strong (RCTs: correcting deficiency restores T)
+//   vitamin D 25 — Moderate (benefit mainly when deficient)
+//   protein 20   — Moderate (severe restriction lowers T)
+//   magnesium 15 — Emerging
+//   selenium 10  — Limited
+// Each nutrient earns points in proportion to how close 100g gets you to
+// a meaningful daily amount (adult male RDAs), capped at its weight —
+// megadosing past sufficiency earns nothing extra, matching the evidence.
 export const SCORING = [
-  // key         weight  target per 100g   display
-  { key: 'zinc', weight: 25, target: 5, label: 'Zinc', unit: 'mg' },
-  { key: 'protein', weight: 25, target: 25, label: 'Protein', unit: 'g' },
-  { key: 'vitaminD', weight: 20, target: 5, label: 'Vitamin D', unit: 'µg' },
+  // key           weight  target/100g   display
+  { key: 'zinc', weight: 30, target: 5, label: 'Zinc', unit: 'mg' },
+  { key: 'vitaminD', weight: 25, target: 5, label: 'Vitamin D', unit: 'µg' },
+  { key: 'protein', weight: 20, target: 25, label: 'Protein', unit: 'g' },
   { key: 'magnesium', weight: 15, target: 100, label: 'Magnesium', unit: 'mg' },
-  { key: 'selenium', weight: 15, target: 28, label: 'Selenium', unit: 'µg' },
+  { key: 'selenium', weight: 10, target: 28, label: 'Selenium', unit: 'µg' },
 ];
 
 // Honest, plain-language summary of the research behind each nutrient.
@@ -45,13 +72,13 @@ export const RESEARCH_NOTES = {
     strength: 'Strong (for deficiency)',
     text: 'Randomized trials show that correcting zinc deficiency restores testosterone in deficient men. Extra zinc does NOT raise testosterone in men who already get enough.',
   },
-  protein: {
-    strength: 'Moderate',
-    text: 'Adequate protein supports hormone production and muscle. Severe protein restriction lowers testosterone; very high intake has no proven extra benefit.',
-  },
   vitaminD: {
     strength: 'Moderate (for deficiency)',
     text: 'Low vitamin D is associated with lower testosterone. Supplementation studies show mixed results — the benefit appears mainly in men who are deficient.',
+  },
+  protein: {
+    strength: 'Moderate',
+    text: 'Adequate protein supports hormone production and muscle. Severe protein restriction lowers testosterone; very high intake has no proven extra benefit.',
   },
   magnesium: {
     strength: 'Emerging',
@@ -89,6 +116,49 @@ export function computeBreakdown(nutrients) {
   });
 }
 
+// ---- Warning flags ------------------------------------------------------
+//
+// Flags are FACTS shown beside the score — they never subtract points.
+// A penalty would reintroduce made-up math ("−12 for sugar… why 12?");
+// a flag simply surfaces what the label says and lets the user judge.
+// The strongest dietary evidence on testosterone is about metabolic
+// harm (obesity, added sugar, ultra-processing), so hiding these while
+// rewarding zinc would be dishonest by omission.
+//
+// Thresholds are per 100g, aligned with common "high in" label guidance.
+export function computeFlags(extras) {
+  const flags = [];
+  if ((extras.addedSugar || 0) >= 10) {
+    flags.push({
+      key: 'sugar',
+      label: 'High added sugar',
+      detail: `${round1(extras.addedSugar)}g added sugar per 100g`,
+    });
+  }
+  if ((extras.sodium || 0) >= 600) {
+    flags.push({
+      key: 'sodium',
+      label: 'Very high sodium',
+      detail: `${Math.round(extras.sodium)}mg sodium per 100g`,
+    });
+  }
+  if ((extras.satFat || 0) >= 8) {
+    flags.push({
+      key: 'satfat',
+      label: 'High saturated fat',
+      detail: `${round1(extras.satFat)}g saturated fat per 100g`,
+    });
+  }
+  if (extras.nova === 4) {
+    flags.push({
+      key: 'ultraprocessed',
+      label: 'Ultra-processed',
+      detail: 'NOVA group 4 — heavily industrially processed',
+    });
+  }
+  return flags;
+}
+
 // Honest evidence label based on which nutrients drive the score.
 export function evidenceLabel(nutrients) {
   if ((nutrients.zinc || 0) >= 2.5 || (nutrients.vitaminD || 0) >= 2.5) {
@@ -100,8 +170,8 @@ export function evidenceLabel(nutrients) {
   return 'Supportive';
 }
 
-// Build the display chips, e.g. ["Protein 25g", "Zinc 4.2mg"].
-const CHIP_META = [
+// Compact meta line for cards, e.g. "Protein 25g · Zinc 4.2mg".
+const META_ORDER = [
   { key: 'protein', label: 'Protein', unit: 'g', min: 5 },
   { key: 'zinc', label: 'Zinc', unit: 'mg', min: 0.8 },
   { key: 'magnesium', label: 'Magnesium', unit: 'mg', min: 25 },
@@ -109,8 +179,8 @@ const CHIP_META = [
   { key: 'selenium', label: 'Selenium', unit: 'µg', min: 8 },
 ];
 
-function nutrientChips(nutrients) {
-  return CHIP_META.filter(({ key, min }) => (nutrients[key] || 0) >= min).map(
+function nutrientMeta(nutrients) {
+  return META_ORDER.filter(({ key, min }) => (nutrients[key] || 0) >= min).map(
     ({ key, label, unit }) => `${label} ${round1(nutrients[key])}${unit}`
   );
 }
@@ -126,7 +196,7 @@ export async function searchFoods(query) {
     api_key: API_KEY,
     query,
     // Foundation + SR Legacy = whole foods with reliable lab-measured
-    // nutrients. (Branded packaged foods come later, with the scanner.)
+    // nutrients. (Branded packaged foods come via the barcode scanner.)
     dataType: 'Foundation,SR Legacy',
     pageSize: '25',
   });
@@ -146,14 +216,22 @@ export async function searchFoods(query) {
       );
       if (match) nutrients[key] = match.value;
     }
+    const extras = {};
+    for (const [key, id] of Object.entries(FLAG_IDS)) {
+      const match = (food.foodNutrients || []).find(
+        (n) => n.nutrientId === id
+      );
+      if (match) extras[key] = match.value;
+    }
 
     return {
       id: String(food.fdcId),
       fdcId: food.fdcId,
       name: titleCase(food.description),
       score: computeBrickdScore(nutrients),
-      nutrients: nutrientChips(nutrients),
+      nutrients: nutrientMeta(nutrients),
       evidence: evidenceLabel(nutrients),
+      flags: computeFlags(extras),
     };
   });
 
@@ -162,22 +240,34 @@ export async function searchFoods(query) {
 }
 
 // Fetch one food by its USDA id and return everything the detail
-// screen needs. (The /food/{id} response nests nutrients differently
-// than search results: n.nutrient.id instead of n.nutrientId.)
+// screen needs. Uses the ABRIDGED format: the full format 500s for
+// some Foundation foods (e.g. canned tuna), abridged works for all.
+// Abridged identifies nutrients by `number` (string), not id.
 export async function getFoodDetails(fdcId) {
-  const res = await fetch(`${BASE_URL}/food/${fdcId}?api_key=${API_KEY}`);
+  const res = await fetch(
+    `${BASE_URL}/food/${fdcId}?api_key=${API_KEY}&format=abridged`
+  );
   if (!res.ok) {
     throw new Error(`USDA API error: ${res.status}`);
   }
   const food = await res.json();
 
   const nutrients = {};
-  for (const [key, id] of Object.entries(NUTRIENT_IDS)) {
+  for (const [key, num] of Object.entries(NUTRIENT_NUMBERS)) {
     const match = (food.foodNutrients || []).find(
-      (n) => n.nutrient?.id === id
+      (n) => String(n.number) === num
     );
     if (match && typeof match.amount === 'number') {
       nutrients[key] = match.amount;
+    }
+  }
+  const extras = {};
+  for (const [key, num] of Object.entries(FLAG_NUMBERS)) {
+    const match = (food.foodNutrients || []).find(
+      (n) => String(n.number) === num
+    );
+    if (match && typeof match.amount === 'number') {
+      extras[key] = match.amount;
     }
   }
 
@@ -187,6 +277,7 @@ export async function getFoodDetails(fdcId) {
     score: computeBrickdScore(nutrients),
     evidence: evidenceLabel(nutrients),
     breakdown: computeBreakdown(nutrients),
+    flags: computeFlags(extras),
   };
 }
 

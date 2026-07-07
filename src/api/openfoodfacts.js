@@ -13,6 +13,7 @@
 import {
   computeBrickdScore,
   computeBreakdown,
+  computeFlags,
   evidenceLabel,
   SCORING,
 } from './usda';
@@ -28,10 +29,17 @@ const OFF_NUTRIENTS = [
   { off: 'selenium_100g', key: 'selenium', factor: 1e6 }, // g -> µg
 ];
 
+// Warning-flag inputs (never scored). OFF grams -> our units.
+const OFF_FLAG_NUTRIENTS = [
+  { off: 'added-sugars_100g', key: 'addedSugar', factor: 1 }, // g -> g
+  { off: 'sodium_100g', key: 'sodium', factor: 1000 }, // g -> mg
+  { off: 'saturated-fat_100g', key: 'satFat', factor: 1 }, // g -> g
+];
+
 // Returns product info, or null if the barcode isn't in the database.
 export async function lookupBarcode(barcode) {
   const res = await fetch(
-    `${OFF_URL}/${encodeURIComponent(barcode)}.json?fields=product_name,brands,nutriments`
+    `${OFF_URL}/${encodeURIComponent(barcode)}.json?fields=product_name,brands,nutriments,nova_group`
   );
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Open Food Facts error: ${res.status}`);
@@ -51,6 +59,16 @@ export async function lookupBarcode(barcode) {
     }
   }
 
+  // Flag inputs, plus the NOVA ultra-processing group (1-4).
+  const extras = {};
+  for (const { off, key, factor } of OFF_FLAG_NUTRIENTS) {
+    const raw = nutriments[off];
+    if (typeof raw === 'number') extras[key] = raw * factor;
+  }
+  if (typeof product.nova_group === 'number') {
+    extras.nova = product.nova_group;
+  }
+
   // Which scored nutrients the label simply doesn't report.
   const missing = SCORING.filter((s) => !reported.includes(s.key)).map(
     (s) => s.label
@@ -63,6 +81,7 @@ export async function lookupBarcode(barcode) {
     score: computeBrickdScore(nutrients),
     evidence: evidenceLabel(nutrients),
     breakdown: computeBreakdown(nutrients),
+    flags: computeFlags(extras),
     reportedCount: reported.length,
     totalCount: SCORING.length,
     missing,

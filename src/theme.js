@@ -116,10 +116,9 @@ export function buildTheme(mode) {
       padding: spacing.card,
     },
 
+    // Borderless pill — quiet metadata, not a bubble.
     chip: {
-      backgroundColor: colors.glass,
-      borderColor: colors.glassBorder,
-      borderWidth: 1,
+      backgroundColor: colors.inputBg,
       borderRadius: radius.chip,
       paddingHorizontal: 10,
       paddingVertical: 4,
@@ -129,6 +128,13 @@ export function buildTheme(mode) {
       color: colors.textSecondary,
       fontSize: 12,
       fontWeight: '600',
+    },
+
+    // Tinted callout (warnings, disclaimers) — background only, no border.
+    warnBox: {
+      backgroundColor: colors.warnDim,
+      borderRadius: 14,
+      padding: 14,
     },
 
     sectionLabel: {

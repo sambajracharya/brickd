@@ -170,6 +170,18 @@ export default function ScanScreen() {
               {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
             </View>
 
+            {/* Warning flags — facts beside the score, never subtracted */}
+            {product.flags.length > 0 && (
+              <View style={styles.caveatBox}>
+                <Text style={styles.caveatTitle}>Heads up</Text>
+                {product.flags.map((f) => (
+                  <Text key={f.key} style={styles.flagLine}>
+                    {f.label} — {f.detail}
+                  </Text>
+                ))}
+              </View>
+            )}
+
             {/* Honesty first: how complete is the label data? */}
             {product.missing.length > 0 && (
               <View style={styles.caveatBox}>
@@ -341,13 +353,9 @@ function createStyles(t) {
       marginTop: 4,
     },
     caveatBox: {
-      backgroundColor: colors.warnDim,
-      borderColor: colors.warnBorder,
-      borderWidth: 1,
-      borderRadius: 14,
+      ...t.warnBox,
       marginHorizontal: spacing.screen,
-      marginBottom: 20,
-      padding: 14,
+      marginBottom: 16,
     },
     caveatTitle: {
       color: colors.warn,
@@ -359,6 +367,12 @@ function createStyles(t) {
       fontSize: 12,
       marginTop: 6,
       lineHeight: 18,
+    },
+    flagLine: {
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 20,
+      marginTop: 4,
     },
     sectionTitle: {
       ...t.sectionLabel,

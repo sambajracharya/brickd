@@ -4,14 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../store/favorites';
 import { useTheme } from '../store/theme';
 
-// One food card: name, heart, score ring, nutrient chips, evidence.
-// `food` = { fdcId, name, score, nutrients, evidence }
+// One food card: name, heart, score ring, nutrient meta line, flags.
+// `food` = { fdcId, name, score, nutrients, evidence, flags? }
+// De-bubbled on purpose: nutrients read as a quiet dot-separated line
+// (X-style metadata), not a wall of pill chips.
 export default function FoodCard({ food, onPress }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const t = useTheme();
   const styles = useMemo(() => createStyles(t), [t]);
   const saved = isFavorite(food.fdcId);
   const ring = t.scoreColor(food.score);
+  const flags = food.flags || [];
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.65} onPress={onPress}>
@@ -36,13 +39,17 @@ export default function FoodCard({ food, onPress }) {
           <Text style={[styles.scoreText, { color: ring }]}>{food.score}</Text>
         </View>
       </View>
+
       {food.nutrients.length > 0 && (
-        <View style={styles.nutrientRow}>
-          {food.nutrients.map((n) => (
-            <View key={n} style={styles.nutrientChip}>
-              <Text style={styles.nutrientText}>{n}</Text>
-            </View>
-          ))}
+        <Text style={styles.meta}>{food.nutrients.join('  ·  ')}</Text>
+      )}
+
+      {flags.length > 0 && (
+        <View style={styles.flagRow}>
+          <Ionicons name="alert-circle" size={13} color={t.colors.warn} />
+          <Text style={styles.flagText}>
+            {flags.map((f) => f.label).join('  ·  ')}
+          </Text>
         </View>
       )}
     </TouchableOpacity>
@@ -90,17 +97,23 @@ function createStyles(t) {
       fontSize: 16,
       fontWeight: '800',
     },
-    nutrientRow: {
+    meta: {
+      color: t.colors.textSecondary,
+      fontSize: 12.5,
+      lineHeight: 19,
+      marginTop: 10,
+    },
+    flagRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      marginTop: 12,
-      gap: 6,
+      alignItems: 'center',
+      gap: 5,
+      marginTop: 8,
     },
-    nutrientChip: {
-      ...t.chip,
-    },
-    nutrientText: {
-      ...t.chipText,
+    flagText: {
+      color: t.colors.warn,
+      fontSize: 12,
+      fontWeight: '600',
+      flex: 1,
     },
   });
 }
