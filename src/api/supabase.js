@@ -1,13 +1,13 @@
 // Supabase client. Reads project credentials from .env.local:
 //   EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-//   EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+//   EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 //
-// The anon key is safe to ship in the app (it's the public client key;
-// row-level security protects data). If the env vars aren't set yet,
-// `supabase` is null and the Profile screen shows setup instructions
-// instead of crashing.
+// The publishable key is safe to ship in the app (row-level security
+// protects data). If the env vars aren't set, `supabase` is null and
+// the UI shows setup instructions instead of crashing.
 
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
@@ -21,7 +21,11 @@ export const supabase =
           storage: AsyncStorage,
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: false,
+          // PKCE: OAuth sends back a one-time ?code= that we exchange
+          // for a session — the modern, recommended mobile flow.
+          flowType: 'pkce',
+          // On web, Supabase can parse the OAuth redirect automatically.
+          detectSessionInUrl: Platform.OS === 'web',
         },
       })
     : null;

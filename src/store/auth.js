@@ -65,20 +65,44 @@ export function AuthProvider({ children }) {
     if (error) throw error;
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type === 'success' && result.url) {
-      // Tokens come back in the URL fragment after the '#'.
-      const fragment = result.url.split('#')[1] ?? result.url.split('?')[1] ?? '';
-      const params = new URLSearchParams(fragment);
-      const access_token = params.get('access_token');
-      const refresh_token = params.get('refresh_token');
-      if (access_token && refresh_token) {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
-        if (sessionError) throw sessionError;
-      }
+    if (result.type !== 'success' || !result.url) {
+      // User closed the browser sheet, or the redirect never fired
+      // (usually a Supabase Redirect URL mismatch).
+      throw new Error(
+        'Google sign-in was cancelled or the redirect back to the app failed.'
+      );
     }
+
+    // PKCE flow: the redirect carries a one-time ?code= to exchange.
+    const returned = new URL(result.url);
+    const code = returned.searchParams.get('code');
+    if (code) {
+      const { error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) throw exchangeError;
+      return;
+    }
+
+    // Fallback: older implicit flow puts tokens in the URL fragment.
+    const fragment = result.url.split('#')[1] ?? '';
+    const params = new URLSearchParams(fragment);
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (access_token && refresh_token) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (sessionError) throw sessionError;
+      return;
+    }
+
+    // We got redirected back but with neither code nor tokens — surface
+    // whatever error Supabase attached instead of failing silently.
+    const errDesc =
+      returned.searchParams.get('error_description') ||
+      params.get('error_description');
+    throw new Error(errDesc || 'Google sign-in returned no session.');
   };
 
   return (
