@@ -1,5 +1,14 @@
 import { useMemo } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Linking,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getFoodsForStore } from '../data/curatedFoods';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
@@ -23,6 +32,20 @@ export default function StoreDetailScreen({ route, navigation }) {
   const styles = useMemo(() => createStyles(t), [t]);
   const { store } = route.params;
   const { foods, basis } = getFoodsForStore(store);
+
+  // Open the store in the platform's maps app for directions.
+  const openDirections = () => {
+    const label = encodeURIComponent(store.name);
+    const hasCoords = store.lat != null && store.lon != null;
+    const url = hasCoords
+      ? Platform.select({
+          ios: `maps:0,0?q=${label}@${store.lat},${store.lon}`,
+          android: `geo:0,0?q=${store.lat},${store.lon}(${label})`,
+          default: `https://www.google.com/maps/search/?api=1&query=${store.lat}%2C${store.lon}`,
+        })
+      : `https://www.google.com/maps/search/?api=1&query=${label}`;
+    Linking.openURL(url).catch(() => {});
+  };
 
   return (
     <Screen>
@@ -67,6 +90,13 @@ export default function StoreDetailScreen({ route, navigation }) {
               {store.openingHours && (
                 <Text style={styles.hours}>{store.openingHours}</Text>
               )}
+              <TouchableOpacity
+                style={styles.directionsButton}
+                onPress={openDirections}
+              >
+                <Ionicons name="navigate" size={14} color={t.colors.onAccent} />
+                <Text style={styles.directionsText}>Directions</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.disclaimer}>
@@ -143,6 +173,23 @@ function createStyles(t) {
       color: colors.textTertiary,
       fontSize: 12,
       marginTop: 4,
+    },
+    directionsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+      backgroundColor: colors.accent,
+      borderRadius: t.radius.button,
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+      marginTop: 12,
+    },
+    directionsText: {
+      color: colors.onAccent,
+      fontSize: 13,
+      fontWeight: '800',
     },
     disclaimer: {
       ...t.warnBox,

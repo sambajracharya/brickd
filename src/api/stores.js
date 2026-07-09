@@ -97,6 +97,8 @@ export async function getNearbyStores(latitude, longitude, radiusMeters = 8000) 
       cuisine: detectCuisine(tags.name),
       address: buildAddress(tags),
       openingHours: tags.opening_hours || null,
+      lat,
+      lon,
       distanceKm: haversineKm(latitude, longitude, lat, lon),
     };
   });

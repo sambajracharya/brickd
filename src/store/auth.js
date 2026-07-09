@@ -5,23 +5,31 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '../api/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const GUEST_KEY = 'brickd:guest';
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
+  const [guest, setGuest] = useState(false);
   const [loading, setLoading] = useState(!!supabase);
 
   useEffect(() => {
     if (!supabase) return;
 
-    supabase.auth.getSession().then(({ data }) => {
+    Promise.all([
+      supabase.auth.getSession(),
+      AsyncStorage.getItem(GUEST_KEY).catch(() => null),
+    ]).then(([{ data }, g]) => {
       setSession(data.session ?? null);
+      setGuest(g === '1');
       setLoading(false);
     });
 
@@ -30,6 +38,13 @@ export function AuthProvider({ children }) {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Browse without an account. Favorites stay on-device (see
+  // favorites.js LEGACY_KEY) and migrate automatically at sign-up.
+  const continueAsGuest = () => {
+    setGuest(true);
+    AsyncStorage.setItem(GUEST_KEY, '1').catch(() => {});
+  };
 
   const signUp = async (email, password) => {
     const { error } = await supabase.auth.signUp({ email, password });
@@ -42,6 +57,9 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
+    // Explicit sign-out returns to the welcome screen (guest mode off).
+    setGuest(false);
+    AsyncStorage.removeItem(GUEST_KEY).catch(() => {});
     await supabase.auth.signOut();
   };
 
@@ -127,7 +145,9 @@ export function AuthProvider({ children }) {
         configured: !!supabase,
         session,
         user: session?.user ?? null,
+        guest,
         loading,
+        continueAsGuest,
         signUp,
         signIn,
         signOut,

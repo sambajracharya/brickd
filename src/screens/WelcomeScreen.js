@@ -147,6 +147,10 @@ export default function WelcomeScreen() {
                 <Text style={styles.signinLink}>Sign in</Text>
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity onPress={auth.continueAsGuest}>
+              <Text style={styles.guestLink}>Browse as guest →</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -307,6 +311,12 @@ const styles = StyleSheet.create({
     color: ACCENT,
     fontSize: 14,
     fontWeight: '700',
+  },
+  guestLink: {
+    color: MUTED,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 18,
   },
   field: {
     backgroundColor: BLACK,

@@ -144,6 +144,12 @@ export default function ProfileScreen() {
 
         {auth.configured && !auth.loading && !auth.user && (
           <View style={styles.card}>
+            {auth.guest && (
+              <Text style={styles.guestNote}>
+                You're browsing as a guest. Saved foods live on this device
+                only — create an account and they'll move to it automatically.
+              </Text>
+            )}
             <TextInput
               style={styles.field}
               placeholder="Email"
@@ -303,6 +309,12 @@ function createStyles(t) {
     field: {
       ...t.input,
       marginBottom: 10,
+    },
+    guestNote: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 19,
+      marginBottom: 14,
     },
     message: {
       fontSize: 13,

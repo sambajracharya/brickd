@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -44,9 +45,10 @@ export default function StoresScreen({ navigation }) {
   const styles = useMemo(() => createStyles(t), [t]);
   const [status, setStatus] = useState('loading'); // loading | denied | error | ready
   const [stores, setStores] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const locate = useCallback(async () => {
-    setStatus('loading');
+  const locate = useCallback(async (silent = false) => {
+    if (!silent) setStatus('loading');
     try {
       const { status: perm } = await Location.requestForegroundPermissionsAsync();
       if (perm !== 'granted') {
@@ -122,6 +124,17 @@ export default function StoresScreen({ navigation }) {
             />
           )}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              tintColor={t.colors.accent}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await locate(true);
+                setRefreshing(false);
+              }}
+            />
+          }
           ListEmptyComponent={
             <Text style={styles.centerText}>
               No grocery stores found within 5 miles.

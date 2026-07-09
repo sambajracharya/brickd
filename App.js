@@ -17,6 +17,7 @@ import ScanScreen from './src/screens/ScanScreen';
 import SavedScreen from './src/screens/SavedScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
+import HowScoringScreen from './src/screens/HowScoringScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { FavoritesProvider } from './src/store/favorites';
 import { ThemeProvider, useTheme } from './src/store/theme';
@@ -43,6 +44,7 @@ function HomeStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
+      <Stack.Screen name="HowScoring" component={HowScoringScreen} />
     </Stack.Navigator>
   );
 }
@@ -65,6 +67,7 @@ function SavedStack() {
         options={{ headerShown: false }}
       />
       <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
+      <Stack.Screen name="HowScoring" component={HowScoringScreen} />
     </Stack.Navigator>
   );
 }
@@ -88,6 +91,7 @@ function StoresStack() {
       />
       <Stack.Screen name="StoreDetail" component={StoreDetailScreen} />
       <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
+      <Stack.Screen name="HowScoring" component={HowScoringScreen} />
     </Stack.Navigator>
   );
 }
@@ -111,7 +115,7 @@ function AppShell() {
   if (auth.configured && auth.loading) {
     return <View style={{ flex: 1, backgroundColor: '#000' }} />;
   }
-  if (auth.configured && !auth.user) {
+  if (auth.configured && !auth.user && !auth.guest) {
     return (
       <>
         <StatusBar style="light" />

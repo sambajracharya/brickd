@@ -41,7 +41,7 @@ function BreakdownRow({ item, t, styles }) {
   );
 }
 
-export default function FoodDetailScreen({ route }) {
+export default function FoodDetailScreen({ route, navigation }) {
   const t = useTheme();
   const styles = useMemo(() => createStyles(t), [t]);
   // Passed from the card so the screen renders instantly...
@@ -115,6 +115,12 @@ export default function FoodDetailScreen({ route }) {
                 (adult male RDAs) for nutrients involved in normal
                 testosterone production. No food raises testosterone above
                 normal in men who are already nutrient-sufficient.
+              </Text>
+              <Text
+                style={styles.methodLink}
+                onPress={() => navigation.navigate('HowScoring')}
+              >
+                How Brick'd scoring works →
               </Text>
             </View>
 
@@ -277,6 +283,12 @@ function createStyles(t) {
       fontStyle: 'italic',
       marginTop: 4,
       lineHeight: 17,
+    },
+    methodLink: {
+      color: colors.accent,
+      fontSize: 12,
+      fontWeight: '700',
+      marginTop: 10,
     },
     researchItem: {
       marginBottom: 18,

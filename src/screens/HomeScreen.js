@@ -5,8 +5,10 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { searchFoods } from '../api/usda';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
@@ -84,6 +86,8 @@ const FEATURED_FOODS = [
   },
 ];
 
+const RECENTS_KEY = 'brickd:recent-searches';
+
 export default function HomeScreen({ navigation }) {
   const t = useTheme();
   const styles = useMemo(() => createStyles(t), [t]);
@@ -91,7 +95,23 @@ export default function HomeScreen({ navigation }) {
   const [results, setResults] = useState(null); // null = show featured list
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [recents, setRecents] = useState([]);
   const debounceRef = useRef(null);
+
+  // Load recent searches once.
+  useEffect(() => {
+    AsyncStorage.getItem(RECENTS_KEY)
+      .then((json) => json && setRecents(JSON.parse(json)))
+      .catch(() => {});
+  }, []);
+
+  const rememberSearch = (q) => {
+    setRecents((prev) => {
+      const next = [q, ...prev.filter((x) => x !== q)].slice(0, 6);
+      AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
 
   // Search the USDA database 500ms after the user stops typing.
   useEffect(() => {
@@ -111,6 +131,7 @@ export default function HomeScreen({ navigation }) {
         const foods = await searchFoods(trimmed);
         setResults(foods);
         setError(null);
+        if (foods.length > 0) rememberSearch(trimmed);
       } catch (e) {
         setError('Could not reach the food database. Check your connection.');
       } finally {
@@ -168,11 +189,29 @@ export default function HomeScreen({ navigation }) {
           )}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            <Text style={styles.sectionTitle}>
-              {showingFeatured
-                ? 'Featured picks'
-                : `Results — sorted by Brick'd Score`}
-            </Text>
+            <View>
+              {showingFeatured && recents.length > 0 && (
+                <View style={styles.recentsBlock}>
+                  <Text style={styles.sectionTitle}>Recent searches</Text>
+                  <View style={styles.recentsRow}>
+                    {recents.map((q) => (
+                      <TouchableOpacity
+                        key={q}
+                        style={styles.recentChip}
+                        onPress={() => setQuery(q)}
+                      >
+                        <Text style={styles.recentText}>{q}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+              <Text style={styles.sectionTitle}>
+                {showingFeatured
+                  ? 'Featured picks'
+                  : `Results — sorted by Brick'd Score`}
+              </Text>
+            </View>
           }
           ListEmptyComponent={
             <Text style={styles.empty}>No foods found for "{query}"</Text>
@@ -212,6 +251,23 @@ function createStyles(t) {
     sectionTitle: {
       ...t.sectionLabel,
       marginBottom: 12,
+    },
+    recentsBlock: {
+      marginBottom: 18,
+    },
+    recentsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    recentChip: {
+      ...t.chip,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
+    recentText: {
+      ...t.chipText,
+      color: t.colors.text,
     },
     loader: {
       marginTop: 40,
