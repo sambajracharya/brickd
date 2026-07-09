@@ -57,19 +57,35 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    const redirectTo = Linking.createURL('/auth');
+    // Two URLs, one trip:
+    // - appReturn (exp://...) is what the auth sheet intercepts to hand
+    //   control back to the app.
+    // - redirectTo (http://<pc-ip>:8085/auth) is what Supabase actually
+    //   redirects to — its allowlist silently rejects custom schemes
+    //   like exp://, so a tiny dev forwarder (scripts/auth-forwarder.js)
+    //   accepts the http redirect and bounces it into the app.
+    const appReturn = Linking.createURL('/auth');
+    const devHost = new URL(appReturn).hostname; // PC's LAN IP in Expo Go
+    const redirectTo = devHost
+      ? `http://${devHost}:8085/auth`
+      : appReturn; // production builds use the app's own scheme
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo, skipBrowserRedirect: true },
     });
     if (error) throw error;
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    const result = await WebBrowser.openAuthSessionAsync(data.url, appReturn);
     if (result.type !== 'success' || !result.url) {
       // User closed the browser sheet, or the redirect never fired
-      // (usually a Supabase Redirect URL mismatch).
+      // (usually a Supabase Redirect URL mismatch). Surface the exact
+      // URLs so failures are diagnosable from the screen.
       throw new Error(
-        'Google sign-in was cancelled or the redirect back to the app failed.'
+        `Google sign-in did not complete (${result.type}).\n` +
+          `auth host: ${new URL(data.url).host}\n` +
+          `redirect: ${redirectTo}\n` +
+          `return: ${appReturn}`
       );
     }
 
