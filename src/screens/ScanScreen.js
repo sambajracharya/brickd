@@ -9,18 +9,21 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { lookupBarcode } from '../api/openfoodfacts';
 import Screen from '../components/Screen';
+import ReceiptScan from '../components/ReceiptScan';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
 
 // Camera barcode scanning isn't supported on web — manual entry only.
 const CAMERA_SUPPORTED = Platform.OS !== 'web';
 
-export default function ScanScreen() {
+export default function ScanScreen({ navigation }) {
   const t = useTheme();
   const styles = useMemo(() => createStyles(t), [t]);
+  const [tool, setTool] = useState('barcode'); // barcode | receipt
   const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState('idle'); // idle | looking | result | notfound | error
   const [product, setProduct] = useState(null);
@@ -67,12 +70,44 @@ export default function ScanScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Scan</Text>
           <Text style={styles.subtitle}>
-            Point at a barcode, or type it below
+            {tool === 'barcode'
+              ? 'Point at a barcode, or type it below'
+              : 'Score your whole grocery haul'}
           </Text>
         </View>
 
+        {/* Barcode | Receipt toggle */}
+        <View style={styles.toolRow}>
+          {[
+            { key: 'barcode', label: 'Barcode', icon: 'barcode' },
+            { key: 'receipt', label: 'Receipt', icon: 'receipt' },
+          ].map(({ key, label, icon }) => {
+            const active = tool === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.toolSegment, active && styles.toolSegmentActive]}
+                onPress={() => setTool(key)}
+              >
+                <Ionicons
+                  name={icon}
+                  size={15}
+                  color={active ? t.colors.onAccent : t.colors.textSecondary}
+                />
+                <Text
+                  style={[styles.toolText, active && styles.toolTextActive]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {tool === 'receipt' && <ReceiptScan navigation={navigation} />}
+
         {/* Camera area (native only) */}
-        {CAMERA_SUPPORTED && mode === 'idle' && !permission?.granted && (
+        {tool === 'barcode' && CAMERA_SUPPORTED && mode === 'idle' && !permission?.granted && (
           <View style={styles.cameraBox}>
             <Text style={styles.centerText}>
               Brick'd needs camera access to scan barcodes.
@@ -83,7 +118,7 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {showCamera && (
+        {tool === 'barcode' && showCamera && (
           <View style={styles.cameraBox}>
             <CameraView
               style={styles.camera}
@@ -96,7 +131,7 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {!CAMERA_SUPPORTED && mode === 'idle' && (
+        {tool === 'barcode' && !CAMERA_SUPPORTED && mode === 'idle' && (
           <View style={styles.cameraBox}>
             <Text style={styles.centerText}>
               Camera scanning works on your phone. On web, enter the barcode
@@ -106,7 +141,7 @@ export default function ScanScreen() {
         )}
 
         {/* Manual entry */}
-        {mode === 'idle' && (
+        {tool === 'barcode' && mode === 'idle' && (
           <View style={styles.manualRow}>
             <TextInput
               style={styles.manualInput}
@@ -126,14 +161,14 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {mode === 'looking' && (
+        {tool === 'barcode' && mode === 'looking' && (
           <View style={styles.centerBox}>
             <ActivityIndicator size="large" color={t.colors.accent} />
             <Text style={styles.centerText}>Looking up product...</Text>
           </View>
         )}
 
-        {mode === 'notfound' && (
+        {tool === 'barcode' && mode === 'notfound' && (
           <View style={styles.centerBox}>
             <Text style={styles.centerText}>
               This barcode isn't in the Open Food Facts database yet. Try a
@@ -145,7 +180,7 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {mode === 'error' && (
+        {tool === 'barcode' && mode === 'error' && (
           <View style={styles.centerBox}>
             <Text style={styles.centerText}>
               Could not look up the product. Check your connection.
@@ -157,7 +192,7 @@ export default function ScanScreen() {
         )}
 
         {/* Result */}
-        {mode === 'result' && product && (
+        {tool === 'barcode' && mode === 'result' && product && (
           <>
             <View style={styles.resultHero}>
               <View style={[styles.scoreHalo, { shadowColor: ring }]}>
@@ -255,6 +290,33 @@ function createStyles(t) {
     },
     subtitle: {
       ...t.screenSubtitle,
+    },
+    toolRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginHorizontal: spacing.screen,
+      marginBottom: 16,
+    },
+    toolSegment: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      paddingVertical: 10,
+      borderRadius: t.radius.input,
+      backgroundColor: colors.inputBg,
+    },
+    toolSegmentActive: {
+      backgroundColor: colors.accent,
+    },
+    toolText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    toolTextActive: {
+      color: colors.onAccent,
     },
     cameraBox: {
       ...t.glassCard,

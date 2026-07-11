@@ -36,6 +36,13 @@
           "cameraPermission": "Brick'd uses your camera to scan product barcodes and look up their nutrition."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Brick'd uses your photo library so you can scan grocery receipts.",
+          "cameraPermission": "Brick'd uses your camera to photograph grocery receipts."
+        }
+      ],
       "expo-font",
       "expo-web-browser"
     ]

@@ -72,6 +72,29 @@ function SavedStack() {
   );
 }
 
+// Scan gets a stack so receipt results can open food details.
+function ScanStack() {
+  const { colors } = useTheme();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerTransparent: true,
+        headerTintColor: colors.text,
+        title: '',
+        headerBackTitle: 'Back',
+      }}
+    >
+      <Stack.Screen
+        name="ScanHome"
+        component={ScanScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
+      <Stack.Screen name="HowScoring" component={HowScoringScreen} />
+    </Stack.Navigator>
+  );
+}
+
 // Stores gets its own stack: store list -> store detail -> food detail.
 function StoresStack() {
   const { colors } = useTheme();
@@ -171,7 +194,7 @@ function AppShell() {
           })}
         >
           <Tab.Screen name="Foods" component={HomeStack} />
-          <Tab.Screen name="Scan" component={ScanScreen} />
+          <Tab.Screen name="Scan" component={ScanStack} />
           <Tab.Screen name="Saved" component={SavedStack} />
           <Tab.Screen name="Stores" component={StoresStack} />
           <Tab.Screen name="Profile" component={ProfileScreen} />
