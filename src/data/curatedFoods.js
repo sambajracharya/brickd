@@ -263,14 +263,50 @@ export const CURATED_FOODS = [
     storeTypes: ['Supermarket'],
     cuisines: ['southAsian', 'middleEastern'],
   },
+
+  // ---- Receipt-recognition catalog --------------------------------------
+  // Common groceries so receipt scans recognize the whole cart instead of
+  // just the curated picks. receiptOnly: they never appear in store lists
+  // (those stay mission-curated) but match and score honestly on receipts.
+  // Same real USDA data pipeline as everything above.
+  { fdcId: 173904, name: 'Oats (rolled)', score: 57, nutrients: ['Protein 13.2g', 'Zinc 3.6mg', 'Magnesium 138mg', 'Selenium 28.9µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 328637, name: 'Cheddar Cheese', score: 55, nutrients: ['Protein 23.3g', 'Zinc 3.7mg', 'Magnesium 26.8mg', 'Selenium 28.3µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [{ key: 'sodium', label: 'Very high sodium', detail: '654mg sodium per 100g' }, { key: 'satfat', label: 'High saturated fat', detail: '19.2g saturated fat per 100g' }], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 170567, name: 'Almonds', score: 52, nutrients: ['Protein 21.2g', 'Zinc 3.1mg', 'Magnesium 270mg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 172470, name: 'Peanut Butter', score: 49, nutrients: ['Protein 22.2g', 'Zinc 2.5mg', 'Magnesium 168mg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [{ key: 'satfat', label: 'High saturated fat', detail: '10.3g saturated fat per 100g' }], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 175176, name: 'Tilapia', score: 48, nutrients: ['Protein 20.1g', 'Magnesium 27mg', 'Vitamin D 3.1µg', 'Selenium 41.8µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 170187, name: 'Walnuts', score: 47, nutrients: ['Protein 15.2g', 'Zinc 3.1mg', 'Magnesium 158mg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 171505, name: 'Ground Turkey', score: 43, nutrients: ['Protein 19.7g', 'Zinc 2.4mg', 'Selenium 21.9µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 167839, name: 'Pork Chops', score: 42, nutrients: ['Protein 21.6g', 'Zinc 1.6mg', 'Magnesium 26mg', 'Selenium 33.1µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 172688, name: 'Whole Wheat Bread', score: 41, nutrients: ['Protein 12.4g', 'Zinc 1.8mg', 'Magnesium 75mg', 'Selenium 25.7µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 171955, name: 'Cod', score: 36, nutrients: ['Protein 17.8g', 'Magnesium 32mg', 'Vitamin D 0.9µg', 'Selenium 33.1µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 175179, name: 'Shrimp', score: 29, nutrients: ['Protein 20.1g', 'Zinc 1.3mg', 'Magnesium 35mg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 168877, name: 'White Rice', score: 21, nutrients: ['Protein 7.1g', 'Zinc 1.1mg', 'Magnesium 25mg', 'Selenium 15.1µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 328841, name: 'Cottage Cheese', score: 19, nutrients: ['Protein 11g', 'Selenium 14.6µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 746782, name: 'Whole Milk', score: 12, nutrients: ['Vitamin D 1µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 171705, name: 'Avocado', score: 10, nutrients: ['Magnesium 29mg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 747447, name: 'Broccoli', score: 8, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 173946, name: 'Blackberries', score: 7, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 170026, name: 'Potatoes', score: 7, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 168482, name: 'Sweet Potato', score: 7, nutrients: ['Magnesium 25mg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 1105314, name: 'Bananas', score: 6, nutrients: ['Magnesium 28mg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 2346410, name: 'Raspberries', score: 5, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 167762, name: 'Strawberries', score: 3, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 746771, name: 'Oranges', score: 3, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 170457, name: 'Tomatoes', score: 3, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 2346411, name: 'Blueberries', score: 2, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 2346412, name: 'Grapes', score: 2, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 1750340, name: 'Apples', score: 1, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
 ];
 
 // Foods for a specific store. Cuisine match (from the store's name,
 // e.g. "Desi Bazaar" -> southAsian) beats the generic store-type list;
 // otherwise fall back to store type, then to the full catalog.
 export function getFoodsForStore(store) {
+  // Store lists stay mission-curated; receipt-only groceries excluded.
+  const storeFoods = CURATED_FOODS.filter((f) => !f.receiptOnly);
+
   if (store.cuisine) {
-    const cuisineMatches = CURATED_FOODS.filter((f) =>
+    const cuisineMatches = storeFoods.filter((f) =>
       f.cuisines.includes(store.cuisine)
     );
     if (cuisineMatches.length > 0) {
@@ -280,7 +316,7 @@ export function getFoodsForStore(store) {
       };
     }
   }
-  const typeMatches = CURATED_FOODS.filter((f) =>
+  const typeMatches = storeFoods.filter((f) =>
     f.storeTypes.includes(store.type)
   );
   if (typeMatches.length > 0) {
@@ -290,7 +326,7 @@ export function getFoodsForStore(store) {
     };
   }
   return {
-    foods: [...CURATED_FOODS].sort((a, b) => b.score - a.score),
+    foods: [...storeFoods].sort((a, b) => b.score - a.score),
     basis: 'fallback',
   };
 }

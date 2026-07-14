@@ -43,6 +43,11 @@ const ABBREV = {
   org: 'organic',
   whl: 'whole',
   wht: 'white',
+  mlk: 'milk',
+  swt: 'sweet',
+  chz: 'cheese',
+  chse: 'cheese',
+  vege: 'vegetable',
   lrg: 'large',
   sm: 'small',
   dz: 'dozen',
@@ -55,13 +60,20 @@ const ABBREV = {
   tf: 'tofu',
 };
 
-// keyword -> curated fdcId. Multi-word keywords are checked first so
-// "pumpkin seeds" doesn't fall through to something generic.
+// keyword -> curated fdcId. Multi-word / specific keywords are checked
+// first so "sweet potato" doesn't fall through to "potato", and
+// "peanut butter" wins before "butter"-anything. Stems like "blackberr"
+// match both singular and plural.
 const KEYWORD_MAP = [
+  // specific multi-word first
   ['pumpkin seed', 170556],
-  ['pepita', 170556],
   ['black bean', 173734],
   ['brazil nut', 170569],
+  ['sweet potato', 168482],
+  ['peanut butter', 172470],
+  ['cottage cheese', 328841],
+  // curated picks
+  ['pepita', 170556],
   ['chia', 170554],
   ['sesame', 170150],
   ['tahini', 170150],
@@ -85,6 +97,34 @@ const KEYWORD_MAP = [
   ['yogurt', 2259794],
   ['queso', 172223],
   ['fresco', 172223],
+  // common groceries (receipt recognition)
+  ['blackberr', 173946],
+  ['blueberr', 2346411],
+  ['strawberr', 167762],
+  ['raspberr', 2346410],
+  ['banana', 1105314],
+  ['apple', 1750340],
+  ['avocado', 171705],
+  ['grape', 2346412],
+  ['orange', 746771],
+  ['milk', 746782],
+  ['cheddar', 328637],
+  ['oat', 173904],
+  ['bread', 172688],
+  ['rice', 168877],
+  ['broccoli', 747447],
+  ['tomato', 170457],
+  ['potato', 170026],
+  ['pork', 167839],
+  ['turkey', 171505],
+  ['shrimp', 175179],
+  ['tilapia', 175176],
+  ['cod', 171955],
+  ['almond', 170567],
+  ['walnut', 170187],
+  ['peanut', 172470],
+  // generic cheese falls back to cheddar (most common purchase)
+  ['cheese', 328637],
 ];
 
 const FOOD_BY_ID = Object.fromEntries(
