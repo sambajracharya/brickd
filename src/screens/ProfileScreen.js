@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,11 +16,45 @@ import { useTheme } from '../store/theme';
 import { useAuth } from '../store/auth';
 import { spacing } from '../theme';
 
-export default function ProfileScreen() {
+// Cross-platform destructive confirm (Alert is a no-op on web).
+function confirmDestructive(title, message, onConfirm) {
+  if (Platform.OS === 'web') {
+    // eslint-disable-next-line no-alert
+    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: onConfirm },
+  ]);
+}
+
+export default function ProfileScreen({ navigation }) {
   const t = useTheme();
   const { colors, mode, setMode } = t;
   const auth = useAuth();
   const styles = useMemo(() => createStyles(t), [t]);
+  const [deleting, setDeleting] = useState(false);
+
+  const onDeleteAccount = () => {
+    confirmDestructive(
+      'Delete account?',
+      'This permanently removes your account and all saved foods from our servers. This cannot be undone.',
+      async () => {
+        setDeleting(true);
+        try {
+          await auth.deleteAccount();
+        } catch (e) {
+          setMessage({
+            kind: 'error',
+            text: e.message ?? 'Could not delete the account.',
+          });
+        } finally {
+          setDeleting(false);
+        }
+      }
+    );
+  };
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -139,8 +175,37 @@ export default function ProfileScreen() {
             >
               <Text style={styles.buttonGhostText}>Sign out</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={onDeleteAccount}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator color={colors.danger} size="small" />
+              ) : (
+                <Text style={styles.deleteText}>Delete account</Text>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.deleteHint}>
+              Permanently removes your account and saved foods. Cannot be
+              undone.
+            </Text>
           </View>
         )}
+
+        {/* About */}
+        <Text style={styles.sectionTitle}>About</Text>
+        <View style={styles.card}>
+          <TouchableOpacity onPress={() => navigation.navigate('Privacy')}>
+            <Text style={styles.aboutLink}>Privacy Policy →</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('HowScoring')}
+            style={{ marginTop: 12 }}
+          >
+            <Text style={styles.aboutLink}>How the score works →</Text>
+          </TouchableOpacity>
+        </View>
 
         {auth.configured && !auth.loading && !auth.user && (
           <View style={styles.card}>
@@ -354,7 +419,28 @@ function createStyles(t) {
       borderColor: colors.glassBorder,
     },
     buttonGhostText: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    deleteButton: {
+      alignItems: 'center',
+      paddingVertical: 11,
+      marginTop: 8,
+    },
+    deleteText: {
       color: colors.danger,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    deleteHint: {
+      color: colors.textTertiary,
+      fontSize: 11,
+      textAlign: 'center',
+      lineHeight: 15,
+    },
+    aboutLink: {
+      color: colors.accent,
       fontSize: 14,
       fontWeight: '700',
     },

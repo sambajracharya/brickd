@@ -63,6 +63,15 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
   };
 
+  // Permanently delete the account. Calls a SECURITY DEFINER Postgres
+  // function (delete_user) that removes the auth user; the favorites
+  // table cascades via its foreign key. App Store requirement.
+  const deleteAccount = async () => {
+    const { error } = await supabase.rpc('delete_user');
+    if (error) throw error;
+    await signOut();
+  };
+
   // Google OAuth. On web, Supabase handles the redirect natively. On
   // phones we open the browser flow and hand the returned tokens back.
   // Requires the Google provider to be enabled in the Supabase dashboard.
@@ -151,6 +160,7 @@ export function AuthProvider({ children }) {
         signUp,
         signIn,
         signOut,
+        deleteAccount,
         signInWithGoogle,
       }}
     >

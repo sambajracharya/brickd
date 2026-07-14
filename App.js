@@ -18,6 +18,7 @@ import SavedScreen from './src/screens/SavedScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HowScoringScreen from './src/screens/HowScoringScreen';
+import PrivacyScreen from './src/screens/PrivacyScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { FavoritesProvider } from './src/store/favorites';
 import { ThemeProvider, useTheme } from './src/store/theme';
@@ -119,6 +120,29 @@ function StoresStack() {
   );
 }
 
+// Profile gets a stack for the privacy policy and scoring explainer.
+function ProfileStack() {
+  const { colors } = useTheme();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerTransparent: true,
+        headerTintColor: colors.text,
+        title: '',
+        headerBackTitle: 'Back',
+      }}
+    >
+      <Stack.Screen
+        name="ProfileHome"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
+      <Stack.Screen name="HowScoring" component={HowScoringScreen} />
+    </Stack.Navigator>
+  );
+}
+
 const TAB_ICONS = {
   Foods: 'nutrition',
   Scan: 'barcode',
@@ -197,7 +221,7 @@ function AppShell() {
           <Tab.Screen name="Scan" component={ScanStack} />
           <Tab.Screen name="Saved" component={SavedStack} />
           <Tab.Screen name="Stores" component={StoresStack} />
-          <Tab.Screen name="Profile" component={ProfileScreen} />
+          <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
       </NavigationContainer>
     </>
