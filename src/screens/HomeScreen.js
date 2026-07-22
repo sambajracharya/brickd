@@ -113,7 +113,7 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-  // Search the USDA database 500ms after the user stops typing.
+  // Search the USDA database 350ms after the user stops typing.
   useEffect(() => {
     clearTimeout(debounceRef.current);
 
@@ -137,7 +137,7 @@ export default function HomeScreen({ navigation }) {
       } finally {
         setLoading(false);
       }
-    }, 500);
+    }, 350);
 
     return () => clearTimeout(debounceRef.current);
   }, [query]);
@@ -209,7 +209,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.sectionTitle}>
                 {showingFeatured
                   ? 'Featured picks'
-                  : `Results — sorted by Brick'd Score`}
+                  : 'Results — best match first'}
               </Text>
             </View>
           }

@@ -131,6 +131,18 @@ const FOOD_BY_ID = Object.fromEntries(
   CURATED_FOODS.map((f) => [f.fdcId, f])
 );
 
+// Keyword-match free text against the catalog. Used by receipt parsing
+// AND food search (search pins the canonical grocery item first, since
+// USDA's own ranking buries basics — its top 40 for "milk" doesn't
+// even include whole milk).
+export function matchCatalogFood(text) {
+  const padded = ` ${String(text).toLowerCase()} `;
+  for (const [keyword, fdcId] of KEYWORD_MAP) {
+    if (padded.includes(` ${keyword}`)) return FOOD_BY_ID[fdcId];
+  }
+  return null;
+}
+
 // One raw receipt line -> cleaned lowercase words, or null if the line
 // is clearly not a purchasable item.
 export function cleanLine(raw) {
@@ -173,14 +185,7 @@ export function parseReceipt(rawText) {
     const cleaned = cleanLine(rawLine);
     if (!cleaned) continue;
 
-    const padded = ` ${cleaned} `;
-    let hit = null;
-    for (const [keyword, fdcId] of KEYWORD_MAP) {
-      if (padded.includes(` ${keyword}`)) {
-        hit = FOOD_BY_ID[fdcId];
-        break;
-      }
-    }
+    const hit = matchCatalogFood(cleaned);
 
     if (hit) {
       if (!seen.has(hit.fdcId)) {

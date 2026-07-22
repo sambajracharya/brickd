@@ -4,6 +4,8 @@
 // The key is loaded from .env.local (EXPO_PUBLIC_USDA_API_KEY) and is
 // never committed to Git.
 
+import { matchCatalogFood } from '../lib/receipt';
+
 const API_KEY = process.env.EXPO_PUBLIC_USDA_API_KEY;
 const BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 
@@ -189,6 +191,128 @@ function round1(n) {
   return Math.round(n * 10) / 10;
 }
 
+// ---- Search quality ----------------------------------------------------
+//
+// USDA's raw results are a database dump: searching "steak" returns
+// Applebee's menu items, "milk" returns Muscle Milk powder. Three
+// defenses make search feel like a grocery app:
+//   1. FILTER: drop restaurant/fast-food/supplement entries.
+//   2. RANK by relevance to what was typed — the Brick'd Score is shown
+//      on the card and used as a tiebreaker, not the sort key (pure
+//      score-sorting floats jerky and protein powder to the top).
+//   3. CLEAN the comma-inverted names ("Beef, ground" -> "Ground Beef").
+
+const EXCLUDED_CATEGORIES = new Set([
+  'Fast Foods',
+  'Restaurant Foods',
+  'Baby Foods',
+  'Beverages',
+  'Alcoholic Beverages',
+  'Sweets',
+  'Snacks',
+  'Meals, Entrees, and Side Dishes',
+]);
+
+// Brand/restaurant names and supplement-speak that leak through.
+const JUNK_PATTERN =
+  /restaurant|supplement|muscle milk|nutritional shake|formulated|kfc|mcdonald|applebee|t\.g\.i|cracker barrel|denny|pizza|burger king|taco bell|wendy|subway|domino|popeyes|chick-fil-a/i;
+
+// Heavily processed / substitute / niche forms rank below basic foods
+// (still shown, honest scores and flags intact — just not first).
+const PROCESSED_PENALTY =
+  /\b(cured|luncheon|frankfurter|sausage|jerky|powder|imitation|meatless|nugget|breaded|bologna|salami|pepperoni|pastrami|mortadella|spread|giblets|gizzard|feet|neck|tail|flour|manufacturing|mechanically separated|corned|loaf|sticks?|sauce)\b/i;
+
+// Cuts a shopper actually buys get a nudge over odds and ends.
+const CUT_BOOST =
+  /\b(breast|thigh|drumstick|tenderloin|sirloin|chuck|brisket|loin|fillet|filet)\b/i;
+
+// USDA prefixes many foods with a class word ("Fish, salmon...",
+// "Nuts, cashew nuts..."). The real food is the second segment.
+const GENERIC_HEADS =
+  /^(fish|crustaceans|mollusks|cereals|nuts|seeds|game meat)$/i;
+
+// Second-segment forms a grocery shopper means by default.
+const BASIC_FORMS =
+  /^(whole|raw|fresh|ground|2% ?(milkfat|reduced fat)?|1% ?(milkfat|lowfat)?|skim|lowfat|nonfat)/i;
+
+function segmentHasWord(segment, q) {
+  return segment.split(/\s+/).includes(q);
+}
+
+// How well a USDA description matches what the user typed.
+function relevance(desc, query) {
+  const d = desc.toLowerCase();
+  const q = query.toLowerCase().trim();
+  const tokens = q.split(/\s+/);
+  const segments = d.split(',').map((s) => s.trim());
+  let r = 0;
+
+  // USDA puts the primary food first: "Beef, ground, ..." — a query
+  // matching that first segment is almost certainly what was meant.
+  const classPrefixed = GENERIC_HEADS.test(segments[0]);
+  if (segments[0] === q) r += 60;
+  else if (segmentHasWord(segments[0], q)) r += 40;
+  // ...except class-prefixed foods, where the real food is the second
+  // segment: "Fish, salmon", "Crustaceans, shrimp", "Nuts, almonds".
+  // Gated to class prefixes so "Sauce, steak" gets no such credit.
+  else if (classPrefixed && segments[1] === q) r += 55;
+  else if (classPrefixed && segments[1] && segmentHasWord(segments[1], q))
+    r += 32;
+  else if (d.startsWith(q)) r += 45;
+
+  if (CUT_BOOST.test(d)) r += 14;
+
+  const firstTwo = segments.slice(0, 2).join(', ');
+  if (tokens.every((t) => firstTwo.includes(t))) r += 25;
+  else if (tokens.every((t) => d.includes(t))) r += 10;
+
+  // "Milk, whole" / "Beef, ground" — the default grocery form.
+  if (segments[1] && BASIC_FORMS.test(segments[1])) r += 12;
+
+  // Simpler entries beat qualifier soup.
+  r -= Math.max(0, segments.length - 2) * 4;
+  r -= d.length * 0.03;
+
+  if (PROCESSED_PENALTY.test(d)) r -= 30;
+  if (/\b(raw|fresh|whole)\b/.test(d)) r += 6;
+
+  return r;
+}
+
+// Descriptor segments that don't help a shopper tell items apart.
+const FILLER_SEGMENT =
+  /^(grade a{1,2}|large|medium|small|jumbo|new zealand|imported|domestic|all commercial varieties|composite of trimmed retail cuts.*|separable lean (only|and fat)|trimmed to .*|select|choice|prime|broilers or fryers|year round average|mature seeds|regular and quick|english)$/i;
+
+// "Beef, ground, 90% lean meat / 10% fat, raw"
+//   -> "Ground Beef (90% lean meat / 10% fat, raw)"
+// "Fish, salmon, Atlantic, farmed, raw" -> "Salmon (atlantic, farmed)"
+function cleanName(desc) {
+  const stripped = desc.replace(/\s*\(includes[^)]*\)/gi, '').trim();
+  let parts = stripped.split(',').map((p) => p.trim()).filter(Boolean);
+
+  // Drop the class prefix: "Fish, salmon..." -> "salmon..."
+  if (parts.length > 1 && GENERIC_HEADS.test(parts[0])) {
+    parts = parts.slice(1);
+  }
+
+  const ADJECTIVE =
+    /^(ground|raw|cooked|roasted|grilled|boiled|baked|dried|frozen|canned|cured|whole|fresh)$/i;
+
+  let head = parts[0];
+  let rest = parts.slice(1).filter((p) => !FILLER_SEGMENT.test(p));
+  // Flip "Beef, ground" -> "ground Beef" when the modifier reads naturally.
+  if (rest[0] && ADJECTIVE.test(rest[0])) {
+    head = `${rest[0]} ${head}`;
+    rest = rest.slice(1);
+  }
+
+  let name = titleCase(head);
+  if (rest.length > 0) {
+    name += ` (${rest.slice(0, 2).join(', ').toLowerCase()})`;
+  }
+  return name;
+}
+
 // ---- API calls --------------------------------------------------------
 
 export async function searchFoods(query) {
@@ -198,7 +322,8 @@ export async function searchFoods(query) {
     // Foundation + SR Legacy = whole foods with reliable lab-measured
     // nutrients. (Branded packaged foods come via the barcode scanner.)
     dataType: 'Foundation,SR Legacy',
-    pageSize: '25',
+    pageSize: '40',
+    requireAllWords: 'true',
   });
 
   const res = await fetch(`${BASE_URL}/foods/search?${params}`);
@@ -207,36 +332,65 @@ export async function searchFoods(query) {
   }
   const data = await res.json();
 
-  const results = (data.foods || []).map((food) => {
-    // Flatten USDA's nutrient list into { protein: 20.5, zinc: 4.2, ... }
-    const nutrients = {};
-    for (const [key, id] of Object.entries(NUTRIENT_IDS)) {
-      const match = (food.foodNutrients || []).find(
-        (n) => n.nutrientId === id
-      );
-      if (match) nutrients[key] = match.value;
-    }
-    const extras = {};
-    for (const [key, id] of Object.entries(FLAG_IDS)) {
-      const match = (food.foodNutrients || []).find(
-        (n) => n.nutrientId === id
-      );
-      if (match) extras[key] = match.value;
-    }
+  const results = (data.foods || [])
+    .filter(
+      (food) =>
+        !EXCLUDED_CATEGORIES.has(food.foodCategory) &&
+        !JUNK_PATTERN.test(food.description)
+    )
+    .map((food) => {
+      // Flatten USDA's nutrient list into { protein: 20.5, zinc: 4.2, ... }
+      const nutrients = {};
+      for (const [key, id] of Object.entries(NUTRIENT_IDS)) {
+        const match = (food.foodNutrients || []).find(
+          (n) => n.nutrientId === id
+        );
+        if (match) nutrients[key] = match.value;
+      }
+      const extras = {};
+      for (const [key, id] of Object.entries(FLAG_IDS)) {
+        const match = (food.foodNutrients || []).find(
+          (n) => n.nutrientId === id
+        );
+        if (match) extras[key] = match.value;
+      }
 
-    return {
-      id: String(food.fdcId),
-      fdcId: food.fdcId,
-      name: titleCase(food.description),
-      score: computeBrickdScore(nutrients),
-      nutrients: nutrientMeta(nutrients),
-      evidence: evidenceLabel(nutrients),
-      flags: computeFlags(extras),
-    };
+      return {
+        id: String(food.fdcId),
+        fdcId: food.fdcId,
+        name: cleanName(food.description),
+        score: computeBrickdScore(nutrients),
+        nutrients: nutrientMeta(nutrients),
+        evidence: evidenceLabel(nutrients),
+        flags: computeFlags(extras),
+        _relevance: relevance(food.description, query),
+      };
+    });
+
+  // Best match first; Brick'd Score breaks ties. Entries whose cleaned
+  // names collide (e.g. three "Eggs" variants) keep only the best one.
+  const sorted = results.sort(
+    (a, b) => b._relevance - a._relevance || b.score - a.score
+  );
+  const seen = new Set();
+  const ranked = sorted.filter((r) => {
+    if (seen.has(r.name)) return false;
+    seen.add(r.name);
+    return true;
   });
 
-  // Best testosterone-supporting foods first.
-  return results.sort((a, b) => b.score - a.score);
+  // Pin the canonical grocery answer first when the query matches the
+  // curated catalog ("milk" -> Whole Milk, "chicken" -> Chicken Breast).
+  const pinned = matchCatalogFood(query);
+  if (pinned) {
+    return [
+      { ...pinned, id: String(pinned.fdcId) },
+      ...ranked.filter(
+        (r) => r.fdcId !== pinned.fdcId && r.name !== pinned.name
+      ),
+    ];
+  }
+  return ranked;
 }
 
 // Fetch one food by its USDA id and return everything the detail
@@ -273,7 +427,7 @@ export async function getFoodDetails(fdcId) {
 
   return {
     fdcId,
-    name: titleCase(food.description),
+    name: cleanName(food.description),
     score: computeBrickdScore(nutrients),
     evidence: evidenceLabel(nutrients),
     breakdown: computeBreakdown(nutrients),
