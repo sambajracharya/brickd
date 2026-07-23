@@ -208,3 +208,73 @@ export function cartSummary(matched) {
   const flagged = matched.filter((m) => (m.food.flags || []).length > 0).length;
   return { avg, count: matched.length, flagged };
 }
+
+export function getFoodById(fdcId) {
+  return FOOD_BY_ID[fdcId] || null;
+}
+
+// ---- Gap analysis -------------------------------------------------------
+//
+// Turns the diagnosis ("Cart Score 21") into a prescription: which
+// scored nutrients does this haul lack a decent source of, and which
+// curated foods would fix that? Nutrient values are parsed from the
+// catalog's chip strings ("Zinc 7.8mg"), which every entry carries.
+
+const CHIP_RE = /^(Protein|Zinc|Magnesium|Vitamin D|Selenium)\s+([\d.]+)\s*(g|mg|µg)$/;
+const TARGETS = {
+  Protein: 25,
+  Zinc: 5,
+  Magnesium: 100,
+  'Vitamin D': 5,
+  Selenium: 28,
+};
+
+function chipValues(food) {
+  const out = {};
+  for (const chip of food.nutrients || []) {
+    const m = chip.match(CHIP_RE);
+    if (m) out[m[1]] = parseFloat(m[2]);
+  }
+  return out;
+}
+
+// { weak: ['Zinc', 'Vitamin D'], suggestions: [food, food, food] }
+export function cartGaps(matched) {
+  // Best single source in the cart, per nutrient.
+  const best = { Protein: 0, Zinc: 0, Magnesium: 0, 'Vitamin D': 0, Selenium: 0 };
+  for (const { food } of matched) {
+    const vals = chipValues(food);
+    for (const [k, v] of Object.entries(vals)) {
+      best[k] = Math.max(best[k], v);
+    }
+  }
+
+  // Weak = no food in the cart gets you even halfway to the target.
+  const weak = Object.entries(TARGETS)
+    .filter(([k, target]) => best[k] / target < 0.5)
+    .map(([k]) => k);
+  if (weak.length === 0) return { weak: [], suggestions: [] };
+
+  // Suggest mission-curated foods (not receipt-only filler) that are
+  // rich in exactly what's missing, excluding what's already bought.
+  const inCart = new Set(matched.map((m) => m.food.fdcId));
+  const gapValue = (food) => {
+    const vals = chipValues(food);
+    let s = 0;
+    for (const k of weak) {
+      s += Math.min((vals[k] || 0) / TARGETS[k], 1);
+    }
+    return s;
+  };
+
+  const suggestions = CURATED_FOODS.filter(
+    (f) => !f.receiptOnly && !inCart.has(f.fdcId)
+  )
+    .map((f) => ({ f, s: gapValue(f) }))
+    .filter((x) => x.s > 0.4)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, 3)
+    .map((x) => x.f);
+
+  return { weak, suggestions };
+}

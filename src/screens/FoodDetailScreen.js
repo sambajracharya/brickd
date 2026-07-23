@@ -7,8 +7,11 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 import { getFoodDetails, RESEARCH_NOTES } from '../api/usda';
 import Screen from '../components/Screen';
+import { useFavorites } from '../store/favorites';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
 
@@ -63,10 +66,38 @@ export default function FoodDetailScreen({ route, navigation }) {
   const displayScore = details ? details.score : score;
   const ring = t.scoreColor(displayScore);
 
+  // Save straight from the detail screen — the place decisions happen.
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const saved = isFavorite(fdcId);
+  const heartFood = () => ({
+    fdcId,
+    name: details ? details.name : name,
+    score: displayScore,
+    nutrients: details
+      ? details.breakdown
+          .filter((b) => b.points > 0)
+          .map((b) => `${b.label} ${b.value}${b.unit}`)
+      : [],
+    evidence: details ? details.evidence : '',
+    flags: details ? details.flags : [],
+  });
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.scoreHero}>
+          <TouchableOpacity
+            style={styles.heroHeart}
+            onPress={() => toggleFavorite(heartFood())}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel={saved ? 'Remove from saved' : 'Save food'}
+          >
+            <Ionicons
+              name={saved ? 'heart' : 'heart-outline'}
+              size={26}
+              color={saved ? t.colors.heart : t.colors.textTertiary}
+            />
+          </TouchableOpacity>
           <View style={[styles.scoreHalo, { shadowColor: ring }]}>
             <View style={[styles.scoreCircle, { borderColor: ring }]}>
               <Text style={styles.scoreBig}>{displayScore}</Text>
@@ -168,6 +199,13 @@ function createStyles(t) {
     scoreHero: {
       alignItems: 'center',
       marginBottom: 26,
+    },
+    heroHeart: {
+      position: 'absolute',
+      top: 0,
+      right: 4,
+      zIndex: 1,
+      padding: 4,
     },
     scoreHalo: {
       shadowOpacity: 0.55,
