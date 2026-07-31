@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,24 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { confirmDestructive } from '../lib/confirm';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import { useTheme } from '../store/theme';
 import { useAuth } from '../store/auth';
 import { spacing } from '../theme';
-
-// Cross-platform destructive confirm (Alert is a no-op on web).
-function confirmDestructive(title, message, onConfirm) {
-  if (Platform.OS === 'web') {
-    // eslint-disable-next-line no-alert
-    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
-    return;
-  }
-  Alert.alert(title, message, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Delete', style: 'destructive', onPress: onConfirm },
-  ]);
-}
 
 export default function ProfileScreen({ navigation }) {
   const t = useTheme();

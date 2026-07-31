@@ -18,7 +18,14 @@ import {
   cartGaps,
   getFoodById,
 } from '../lib/receipt';
-import { loadHistory, addHistoryEntry, formatHaulDate } from '../lib/history';
+import {
+  loadHistory,
+  addHistoryEntry,
+  deleteHistoryEntry,
+  clearHistory,
+  formatHaulDate,
+} from '../lib/history';
+import { confirmDestructive } from '../lib/confirm';
 import FoodCard from './FoodCard';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
@@ -63,6 +70,28 @@ export default function ReceiptScan({ navigation }) {
     setResult({ matched, unmatched, summary, gaps, delta });
     setShowUnmatched(false);
     setMode('result');
+  };
+
+  const removeHaul = (entry) => {
+    confirmDestructive(
+      'Delete this haul?',
+      `Your scan from ${formatHaulDate(entry.ts)} (score ${entry.avg}) will be removed from your history.`,
+      async () => {
+        const next = await deleteHistoryEntry(entry.ts, history);
+        setHistory(next);
+      }
+    );
+  };
+
+  const removeAllHauls = () => {
+    confirmDestructive(
+      'Clear all hauls?',
+      'Your entire scan history will be removed. This cannot be undone.',
+      async () => {
+        setHistory(await clearHistory());
+      },
+      'Clear all'
+    );
   };
 
   // Reopen a saved haul (read-only view; nothing re-saved).
@@ -166,7 +195,12 @@ export default function ReceiptScan({ navigation }) {
 
           {history.length > 0 && (
             <View style={styles.historyBlock}>
-              <Text style={styles.sectionTitle}>Past hauls</Text>
+              <View style={styles.historyHeader}>
+                <Text style={styles.sectionTitle}>Past hauls</Text>
+                <TouchableOpacity onPress={removeAllHauls}>
+                  <Text style={styles.clearAllLink}>Clear all</Text>
+                </TouchableOpacity>
+              </View>
               {history.length > 1 && (
                 <Text style={styles.trendLine}>
                   {[...history]
@@ -206,6 +240,18 @@ export default function ReceiptScan({ navigation }) {
                       {h.flagged > 0 ? ` · ${h.flagged} flagged` : ''}
                     </Text>
                   </View>
+                  <TouchableOpacity
+                    onPress={() => removeHaul(h)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    accessibilityLabel={`Delete haul from ${formatHaulDate(h.ts)}`}
+                    style={styles.deleteHaul}
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={17}
+                      color={t.colors.textTertiary}
+                    />
+                  </TouchableOpacity>
                   <Ionicons
                     name="chevron-forward"
                     size={16}
@@ -459,6 +505,21 @@ function createStyles(t) {
     historyBlock: {
       marginTop: 22,
       marginHorizontal: spacing.screen,
+    },
+    historyHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    clearAllLink: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '700',
+      marginBottom: 10,
+    },
+    deleteHaul: {
+      padding: 4,
+      marginRight: 2,
     },
     trendLine: {
       color: colors.textSecondary,

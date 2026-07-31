@@ -27,6 +27,22 @@ export async function addHistoryEntry(entry, current) {
   return next;
 }
 
+// Remove one haul (identified by its timestamp); returns the new list.
+export async function deleteHistoryEntry(ts, current) {
+  const next = current.filter((h) => h.ts !== ts);
+  try {
+    await AsyncStorage.setItem(KEY, JSON.stringify(next));
+  } catch {}
+  return next;
+}
+
+export async function clearHistory() {
+  try {
+    await AsyncStorage.removeItem(KEY);
+  } catch {}
+  return [];
+}
+
 export function formatHaulDate(ts) {
   return new Date(ts).toLocaleDateString(undefined, {
     month: 'short',
