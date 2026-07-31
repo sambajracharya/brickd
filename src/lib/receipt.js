@@ -60,44 +60,126 @@ const ABBREV = {
   tf: 'tofu',
 };
 
-// keyword -> curated fdcId. Multi-word / specific keywords are checked
-// first so "sweet potato" doesn't fall through to "potato", and
-// "peanut butter" wins before "butter"-anything. Stems like "blackberr"
-// match both singular and plural.
+// Composite/processed products that merely CONTAIN a food word.
+// "Beef jerky" is not beef, "milk chocolate" is not milk, "egg noodles"
+// are not eggs. These lines are reported as unrecognized rather than
+// scored as the wrong food — plus plant milks we have no data for.
+const NOT_THE_FOOD =
+  /\b(jerky|soup|broth|stock|bouillon|chocolate|candy|cookies?|crackers?|chips?|cereal|granola|treats?|cake|pie|donuts?|muffins?|pastry|ice cream|frozen yogurt|pizza|burrito|sandwich|nuggets?|tenders?|patties|noodles?|pasta|spaghetti|macaroni|ramen|lasagna|sauce|dressing|marinade|seasoning|gravy|dip|spread|shake|smoothie|latte|creamer|pudding|jello|gummy|bars?|roll|bun|bagel|waffle|pancake|pop ?tart|hot dog|corn dog|lunchable|helper|flavored|coconut milk|soy milk|oat milk|rice milk|cashew milk|hemp milk)\b/i;
+
+// Phrase -> curated fdcId. The matcher picks the LONGEST matching
+// phrase, not the first one listed, so "grass fed ground beef" wins
+// over "ground beef" which wins over "beef" regardless of order here.
+// Lean ratios on receipts ("93/7") are normalised to lean93 by
+// cleanLine so they can be matched as words.
 const KEYWORD_MAP = [
-  // specific multi-word first
-  ['pumpkin seed', 170556],
-  ['black bean', 173734],
-  ['brazil nut', 170569],
-  ['sweet potato', 168482],
-  ['peanut butter', 172470],
+  // --- beef ---------------------------------------------------------
+  ['grass fed ground beef', 168608],
+  ['grass fed beef', 168608],
+  ['grassfed beef', 168608],
+  ['ground beef lean93', 173110],
+  ['ground beef lean80', 174036],
+  ['ground beef lean90', 174030],
+  ['ground beef', 174030],
+  ['lean93 beef', 173110],
+  ['lean80 beef', 174036],
+  ['beef lean93', 173110],
+  ['beef lean80', 174036],
+  ['beef lean90', 174030],
+  ['chuck roast', 2646174],
+  ['beef chuck', 2646174],
+  ['stew meat', 2646174],
+  ['beef stew meat', 2646174],
+  ['ribeye', 173403],
+  ['rib eye', 173403],
+  ['sirloin', 173403],
+  ['beef steak', 173403],
+  ['beef liver', 169451],
+  ['beef', 174030],
+  // --- chicken ------------------------------------------------------
+  ['chicken breast', 2646170],
+  ['chicken thigh', 173627],
+  ['chicken wing', 172390],
+  ['ground chicken', 171116],
+  ['rotisserie chicken', 171123],
+  ['whole chicken', 171123],
+  ['chicken', 2646170],
+  // --- other meat ---------------------------------------------------
+  ['ground turkey', 171505],
+  ['turkey', 171505],
+  ['ground lamb', 174370],
+  ['lamb', 174370],
+  ['pork chop', 167839],
+  ['pork', 167839],
+  ['liver', 169451],
+  // --- seafood ------------------------------------------------------
+  ['wild caught salmon', 173691],
+  ['wild salmon', 173691],
+  ['sockeye', 173691],
+  ['atlantic salmon', 175167],
+  ['salmon', 175167],
+  ['sardine', 175139],
+  ['mackerel', 175119],
+  ['tilapia', 175176],
+  ['shrimp', 175179],
+  ['oyster', 171978],
+  ['tuna', 334194],
+  ['cod', 171955],
+  // --- dairy & eggs -------------------------------------------------
+  ['egg white', 172183],
+  ['whole egg', 171287],
+  ['egg', 171287],
+  ['greek yogurt', 2259794],
+  ['lowfat yogurt', 170886],
+  ['low fat yogurt', 170886],
+  ['plain yogurt', 170886],
+  ['yogurt', 2259794],
+  ['almond milk', 174832],
+  ['whole milk', 746782],
+  ['skim milk', 171269],
+  ['nonfat milk', 171269],
+  ['fat free milk', 171269],
+  ['2 milk', 171267],
+  ['2 percent milk', 171267],
+  ['reduced fat milk', 171267],
+  ['milk', 746782],
   ['cottage cheese', 328841],
-  // curated picks
+  ['cheddar', 328637],
+  ['mozzarella', 170845],
+  ['queso fresco', 172223],
+  ['queso', 172223],
+  ['cheese', 328637],
+  // --- nuts, seeds, legumes -----------------------------------------
+  ['almond butter', 168588],
+  ['peanut butter', 172470],
+  ['pumpkin seed', 170556],
   ['pepita', 170556],
-  ['chia', 170554],
+  ['brazil nut', 170569],
   ['sesame', 170150],
   ['tahini', 170150],
+  ['chia', 170554],
   ['cashew', 2515374],
+  ['almond', 170567],
+  ['walnut', 170187],
+  ['black bean', 173734],
   ['lentil', 172420],
   ['chickpea', 173756],
   ['garbanzo', 173756],
   ['tofu', 172475],
   ['edamame', 168411],
-  ['spinach', 168462],
-  ['oyster', 171978],
-  ['sardine', 175139],
-  ['mackerel', 175119],
-  ['salmon', 175167],
-  ['tuna', 334194],
-  ['liver', 169451],
-  ['lamb', 174370],
-  ['beef', 174030],
-  ['chicken', 2646170],
-  ['egg', 171287],
-  ['yogurt', 2259794],
-  ['queso', 172223],
-  ['fresco', 172223],
-  // common groceries (receipt recognition)
+  // --- grains -------------------------------------------------------
+  ['brown rice', 2512380],
+  ['white rice', 168877],
+  ['rice', 168877],
+  ['whole wheat bread', 172688],
+  ['wheat bread', 172688],
+  ['white bread', 174925],
+  ['bread', 172688],
+  ['oatmeal', 173904],
+  ['oats', 173904],
+  ['oat', 173904],
+  // --- produce ------------------------------------------------------
+  ['sweet potato', 168482],
   ['blackberr', 173946],
   ['blueberr', 2346411],
   ['strawberr', 167762],
@@ -107,24 +189,10 @@ const KEYWORD_MAP = [
   ['avocado', 171705],
   ['grape', 2346412],
   ['orange', 746771],
-  ['milk', 746782],
-  ['cheddar', 328637],
-  ['oat', 173904],
-  ['bread', 172688],
-  ['rice', 168877],
+  ['spinach', 168462],
   ['broccoli', 747447],
   ['tomato', 170457],
   ['potato', 170026],
-  ['pork', 167839],
-  ['turkey', 171505],
-  ['shrimp', 175179],
-  ['tilapia', 175176],
-  ['cod', 171955],
-  ['almond', 170567],
-  ['walnut', 170187],
-  ['peanut', 172470],
-  // generic cheese falls back to cheddar (most common purchase)
-  ['cheese', 328637],
 ];
 
 const FOOD_BY_ID = Object.fromEntries(
@@ -135,12 +203,33 @@ const FOOD_BY_ID = Object.fromEntries(
 // AND food search (search pins the canonical grocery item first, since
 // USDA's own ranking buries basics — its top 40 for "milk" doesn't
 // even include whole milk).
+//
+// Longest matching phrase wins, so a receipt line carrying a qualifier
+// resolves to the specific variant ("grass fed ground beef" -> grass-fed
+// beef, "egg white" -> egg whites) instead of the generic food. Lines
+// naming a composite product ("beef jerky") match nothing on purpose.
 export function matchCatalogFood(text) {
-  const padded = ` ${String(text).toLowerCase()} `;
+  const raw = String(text).toLowerCase();
+  if (NOT_THE_FOOD.test(raw)) return null;
+
+  const padded = ` ${raw} `;
+  let best = null;
+  let bestScore = 0;
   for (const [keyword, fdcId] of KEYWORD_MAP) {
-    if (padded.includes(` ${keyword}`)) return FOOD_BY_ID[fdcId];
+    // Every word of the phrase must appear at a word start, but not
+    // necessarily adjacent or in order — receipts scramble word order
+    // ("YOGURT LOWFAT" vs "lowfat yogurt"). Prefix matching also lets
+    // stems like "blackberr" hit "blackberries".
+    const words = keyword.split(' ');
+    if (!words.every((w) => padded.includes(` ${w}`))) continue;
+    // More specific phrases (more words, longer) beat generic ones.
+    const score = keyword.length + words.length * 2;
+    if (score > bestScore) {
+      best = FOOD_BY_ID[fdcId];
+      bestScore = score;
+    }
   }
-  return null;
+  return best;
 }
 
 // One raw receipt line -> cleaned lowercase words, or null if the line
@@ -157,17 +246,26 @@ export function cleanLine(raw) {
   line = line.replace(/^\d+\s*[xX@]\s*/, '');
   // Strip long digit runs (UPCs, SKUs)
   line = line.replace(/\b\d{5,}\b/g, ' ');
-  // Strip stray price fragments and percentages like 93/7
+  // Strip stray price fragments
   line = line.replace(/\$?\d+[.,]\d{2}/g, ' ');
+  // Lean ratios ("93/7", "80/20") carry real meaning — the two numbers
+  // sum to 100. Turn them into a matchable word before digits are
+  // dropped; any other x/y pair is noise.
+  line = line.replace(/\b(\d{2})\s*\/\s*(\d{1,2})\b/g, (m, a, b) =>
+    Number(a) + Number(b) === 100 ? ` lean${a} ` : ' '
+  );
   line = line.replace(/\b\d+\s*\/\s*\d+\b/g, ' ');
+  // "2% milk" -> "2 milk" so the percentage survives tokenisation.
+  line = line.replace(/\b(\d)\s*%/g, ' $1 ');
 
   const letters = (line.match(/[a-zA-Z]/g) || []).length;
   if (letters < 3) return null;
 
-  // Tokenize, expand abbreviations, lowercase.
+  // Tokenize, expand abbreviations, lowercase. Digits are kept so the
+  // lean93 / "2" (percent milk) markers above survive.
   const words = line
     .toLowerCase()
-    .split(/[^a-z]+/)
+    .split(/[^a-z0-9]+/)
     .filter(Boolean)
     .map((w) => ABBREV[w] || w);
 

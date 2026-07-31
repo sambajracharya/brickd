@@ -296,6 +296,31 @@ export const CURATED_FOODS = [
   { fdcId: 2346411, name: 'Blueberries', score: 2, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
   { fdcId: 2346412, name: 'Grapes', score: 2, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
   { fdcId: 1750340, name: 'Apples', score: 1, nutrients: [], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+
+  // ---- Variants -----------------------------------------------------------
+  // Receipts name a specific version of a food ("GRASS FED GRND BEEF",
+  // "2% MILK", "EGG WHITES") whose nutrition differs meaningfully from
+  // the default entry. Without these, the matcher had to round every
+  // variant to the nearest generic food and report the wrong numbers.
+  { fdcId: 173110, name: 'Ground Beef (93% lean)', score: 56, nutrients: ['Protein 20.8g', 'Zinc 5mg', 'Selenium 17.1µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 173403, name: 'Ribeye Steak', score: 56, nutrients: ['Protein 18.7g', 'Zinc 4.9mg', 'Selenium 24µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [{ key: 'satfat', label: 'High saturated fat', detail: '8.1g saturated fat per 100g' }], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 168608, name: 'Grass-Fed Ground Beef', score: 51, nutrients: ['Protein 19.4g', 'Zinc 4.6mg', 'Selenium 14.2µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 174036, name: 'Ground Beef (80% lean)', score: 47, nutrients: ['Protein 17.2g', 'Zinc 4.2mg', 'Selenium 15µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 2646174, name: 'Beef Chuck Roast', score: 47, nutrients: ['Protein 18.4g', 'Zinc 5.4mg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 173691, name: 'Wild Salmon (sockeye)', score: 60, nutrients: ['Protein 22.2g', 'Magnesium 30mg', 'Vitamin D 14.1µg', 'Selenium 29.8µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 168588, name: 'Almond Butter', score: 52, nutrients: ['Protein 21g', 'Zinc 3.3mg', 'Magnesium 279mg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 170845, name: 'Mozzarella', score: 46, nutrients: ['Protein 22.2g', 'Zinc 2.9mg', 'Selenium 17µg'], evidence: 'Strong (corrects zinc/vitamin D deficiency)', flags: [{ key: 'satfat', label: 'High saturated fat', detail: '13.9g saturated fat per 100g' }], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 171123, name: 'Rotisserie Chicken', score: 39, nutrients: ['Protein 27.5g', 'Zinc 0.9mg', 'Magnesium 26mg', 'Selenium 30.6µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 173627, name: 'Chicken Thigh', score: 37, nutrients: ['Protein 19.7g', 'Zinc 1.6mg', 'Selenium 22.9µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 2512380, name: 'Brown Rice', score: 37, nutrients: ['Protein 7.3g', 'Zinc 1.9mg', 'Magnesium 115mg', 'Selenium 14.8µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 172390, name: 'Chicken Wings', score: 30, nutrients: ['Protein 17.5g', 'Zinc 1.2mg', 'Selenium 17.6µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 171116, name: 'Ground Chicken', score: 30, nutrients: ['Protein 17.4g', 'Zinc 1.5mg', 'Selenium 10.2µg'], evidence: 'Moderate', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 174925, name: 'White Bread', score: 25, nutrients: ['Protein 9g', 'Magnesium 26mg', 'Selenium 31µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 172183, name: 'Egg Whites', score: 18, nutrients: ['Protein 10.9g', 'Selenium 20µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 171267, name: 'Milk (2%)', score: 14, nutrients: ['Vitamin D 1.2µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 171269, name: 'Skim Milk', score: 14, nutrients: ['Vitamin D 1.2µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 170886, name: 'Yogurt (plain, lowfat)', score: 13, nutrients: ['Protein 5.3g', 'Zinc 0.9mg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
+  { fdcId: 174832, name: 'Almond Milk', score: 7, nutrients: ['Vitamin D 1µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
 ];
 
 // Foods for a specific store. Cuisine match (from the store's name,
