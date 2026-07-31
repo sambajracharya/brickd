@@ -20,6 +20,7 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import HowScoringScreen from './src/screens/HowScoringScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import BackButton from './src/components/BackButton';
 import { FavoritesProvider } from './src/store/favorites';
 import { ThemeProvider, useTheme } from './src/store/theme';
 import { AuthProvider, useAuth } from './src/store/auth';
@@ -27,18 +28,22 @@ import { AuthProvider, useAuth } from './src/store/auth';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Shared options for every pushed (detail) screen: transparent header
+// over the screen's own gradient, no title, and a clearly visible
+// circular back button instead of the default bare chevron.
+const detailScreenOptions = ({ navigation }) => ({
+  headerTransparent: true,
+  headerShadowVisible: false,
+  title: '',
+  headerBackVisible: false, // replaced by our own button
+  headerLeftContainerStyle: { paddingLeft: 12 },
+  headerLeft: () => <BackButton onPress={() => navigation.goBack()} />,
+});
+
 // The Foods tab is a stack: food list -> food detail.
 function HomeStack() {
-  const { colors } = useTheme();
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerTransparent: true,
-        headerTintColor: colors.text,
-        title: '',
-        headerBackTitle: 'Back',
-      }}
-    >
+    <Stack.Navigator screenOptions={detailScreenOptions}>
       <Stack.Screen
         name="Home"
         component={HomeScreen}
@@ -52,16 +57,8 @@ function HomeStack() {
 
 // Saved gets its own stack so tapping a saved food opens details too.
 function SavedStack() {
-  const { colors } = useTheme();
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerTransparent: true,
-        headerTintColor: colors.text,
-        title: '',
-        headerBackTitle: 'Back',
-      }}
-    >
+    <Stack.Navigator screenOptions={detailScreenOptions}>
       <Stack.Screen
         name="SavedList"
         component={SavedScreen}
@@ -75,16 +72,8 @@ function SavedStack() {
 
 // Scan gets a stack so receipt results can open food details.
 function ScanStack() {
-  const { colors } = useTheme();
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerTransparent: true,
-        headerTintColor: colors.text,
-        title: '',
-        headerBackTitle: 'Back',
-      }}
-    >
+    <Stack.Navigator screenOptions={detailScreenOptions}>
       <Stack.Screen
         name="ScanHome"
         component={ScanScreen}
@@ -98,16 +87,8 @@ function ScanStack() {
 
 // Stores gets its own stack: store list -> store detail -> food detail.
 function StoresStack() {
-  const { colors } = useTheme();
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerTransparent: true,
-        headerTintColor: colors.text,
-        title: '',
-        headerBackTitle: 'Back',
-      }}
-    >
+    <Stack.Navigator screenOptions={detailScreenOptions}>
       <Stack.Screen
         name="StoresList"
         component={StoresScreen}
@@ -122,16 +103,8 @@ function StoresStack() {
 
 // Profile gets a stack for the privacy policy and scoring explainer.
 function ProfileStack() {
-  const { colors } = useTheme();
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerTransparent: true,
-        headerTintColor: colors.text,
-        title: '',
-        headerBackTitle: 'Back',
-      }}
-    >
+    <Stack.Navigator screenOptions={detailScreenOptions}>
       <Stack.Screen
         name="ProfileHome"
         component={ProfileScreen}
