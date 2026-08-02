@@ -27,6 +27,7 @@ import {
 } from '../lib/history';
 import { confirmDestructive } from '../lib/confirm';
 import FoodCard from './FoodCard';
+import { useAuth } from '../store/auth';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
 
@@ -34,6 +35,8 @@ const CAMERA_SUPPORTED = Platform.OS !== 'web';
 
 export default function ReceiptScan({ navigation }) {
   const t = useTheme();
+  const { user } = useAuth();
+  const uid = user?.id ?? null; // history is scoped per identity
   const styles = useMemo(() => createStyles(t), [t]);
   const [mode, setMode] = useState('idle'); // idle | manual | working | result | error
   const [workingStep, setWorkingStep] = useState('');
@@ -43,9 +46,16 @@ export default function ReceiptScan({ navigation }) {
   const [showUnmatched, setShowUnmatched] = useState(false);
   const [history, setHistory] = useState([]);
 
+  // Reloads when the signed-in identity changes, so one user's hauls
+  // never render for another.
   useEffect(() => {
-    loadHistory().then(setHistory);
-  }, []);
+    let cancelled = false;
+    setHistory([]);
+    loadHistory(uid).then((h) => !cancelled && setHistory(h));
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
 
   const analyze = async (text) => {
     const { matched, unmatched } = parseReceipt(text);
@@ -64,7 +74,7 @@ export default function ReceiptScan({ navigation }) {
         foodIds: matched.map((m) => m.food.fdcId),
         unmatched: unmatched.slice(0, 20),
       };
-      const next = await addHistoryEntry(entry, history);
+      const next = await addHistoryEntry(entry, history, uid);
       setHistory(next);
     }
     setResult({ matched, unmatched, summary, gaps, delta });
@@ -77,7 +87,7 @@ export default function ReceiptScan({ navigation }) {
       'Delete this haul?',
       `Your scan from ${formatHaulDate(entry.ts)} (score ${entry.avg}) will be removed from your history.`,
       async () => {
-        const next = await deleteHistoryEntry(entry.ts, history);
+        const next = await deleteHistoryEntry(entry.ts, history, uid);
         setHistory(next);
       }
     );
@@ -88,7 +98,7 @@ export default function ReceiptScan({ navigation }) {
       'Clear all hauls?',
       'Your entire scan history will be removed. This cannot be undone.',
       async () => {
-        setHistory(await clearHistory());
+        setHistory(await clearHistory(uid));
       },
       'Clear all'
     );

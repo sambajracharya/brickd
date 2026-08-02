@@ -12,6 +12,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { searchFoods } from '../api/usda';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
+import { scopedKey, migrateLegacyKey } from '../lib/scopedStorage';
+import { useAuth } from '../store/auth';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
 
@@ -86,10 +88,15 @@ const FEATURED_FOODS = [
   },
 ];
 
-const RECENTS_KEY = 'brickd:recent-searches';
+// Scoped per identity — one user's searches must not surface for the
+// next person who signs in on the same device.
+const RECENTS_BASE = 'brickd:recent-searches';
 
 export default function HomeScreen({ navigation }) {
   const t = useTheme();
+  const { user } = useAuth();
+  const uid = user?.id ?? null;
+  const recentsKey = scopedKey(RECENTS_BASE, uid);
   const styles = useMemo(() => createStyles(t), [t]);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null); // null = show featured list
@@ -98,17 +105,25 @@ export default function HomeScreen({ navigation }) {
   const [recents, setRecents] = useState([]);
   const debounceRef = useRef(null);
 
-  // Load recent searches once.
+  // Load recent searches for the current identity.
   useEffect(() => {
-    AsyncStorage.getItem(RECENTS_KEY)
-      .then((json) => json && setRecents(JSON.parse(json)))
+    let cancelled = false;
+    setRecents([]);
+    migrateLegacyKey(RECENTS_BASE, uid)
+      .then(() => AsyncStorage.getItem(recentsKey))
+      .then((json) => {
+        if (!cancelled && json) setRecents(JSON.parse(json));
+      })
       .catch(() => {});
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [uid, recentsKey]);
 
   const rememberSearch = (q) => {
     setRecents((prev) => {
       const next = [q, ...prev.filter((x) => x !== q)].slice(0, 6);
-      AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(next)).catch(() => {});
+      AsyncStorage.setItem(recentsKey, JSON.stringify(next)).catch(() => {});
       return next;
     });
   };

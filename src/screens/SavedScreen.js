@@ -11,37 +11,50 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavorites } from '../store/favorites';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
+import { scopedKey, migrateLegacyKey } from '../lib/scopedStorage';
+import { useAuth } from '../store/auth';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
 
 // In-store check-offs live on the device (they're transient shopping
-// state, not account data).
-const CHECKED_KEY = 'brickd:saved-checked';
+// state, not account data) but are still scoped per identity.
+const CHECKED_BASE = 'brickd:saved-checked';
 
 export default function SavedScreen({ navigation }) {
   const t = useTheme();
+  const { user } = useAuth();
+  const uid = user?.id ?? null;
+  const checkedKey = scopedKey(CHECKED_BASE, uid);
   const styles = useMemo(() => createStyles(t), [t]);
   const { favorites } = useFavorites();
   const [checked, setChecked] = useState({});
 
   useEffect(() => {
-    AsyncStorage.getItem(CHECKED_KEY)
-      .then((json) => json && setChecked(JSON.parse(json)))
+    let cancelled = false;
+    setChecked({});
+    migrateLegacyKey(CHECKED_BASE, uid)
+      .then(() => AsyncStorage.getItem(checkedKey))
+      .then((json) => {
+        if (!cancelled && json) setChecked(JSON.parse(json));
+      })
       .catch(() => {});
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [uid, checkedKey]);
 
   const toggleChecked = (fdcId) => {
     setChecked((prev) => {
       const next = { ...prev, [fdcId]: !prev[fdcId] };
       if (!next[fdcId]) delete next[fdcId];
-      AsyncStorage.setItem(CHECKED_KEY, JSON.stringify(next)).catch(() => {});
+      AsyncStorage.setItem(checkedKey, JSON.stringify(next)).catch(() => {});
       return next;
     });
   };
 
   const clearChecked = () => {
     setChecked({});
-    AsyncStorage.removeItem(CHECKED_KEY).catch(() => {});
+    AsyncStorage.removeItem(checkedKey).catch(() => {});
   };
 
   const anyChecked = Object.keys(checked).length > 0;

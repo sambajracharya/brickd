@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '../api/supabase';
+import { purgeScope } from '../lib/scopedStorage';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -66,9 +67,15 @@ export function AuthProvider({ children }) {
   // Permanently delete the account. Calls a SECURITY DEFINER Postgres
   // function (delete_user) that removes the auth user; the favorites
   // table cascades via its foreign key. App Store requirement.
+  //
+  // Local caches for that identity (favorites cache, receipt history,
+  // recent searches, check-offs) are purged too — "delete my account"
+  // should leave nothing behind on the device either.
   const deleteAccount = async () => {
+    const uid = session?.user?.id ?? null;
     const { error } = await supabase.rpc('delete_user');
     if (error) throw error;
+    await purgeScope(uid);
     await signOut();
   };
 
