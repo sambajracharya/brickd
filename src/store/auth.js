@@ -9,11 +9,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '../api/supabase';
-import { purgeScope } from '../lib/scopedStorage';
+import { purgeScope, claimGuestData } from '../lib/scopedStorage';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const GUEST_KEY = 'brickd:guest';
+// Set at sign-up, consumed on that account's first sign-in, so the
+// guest data created on this device follows the person who just made
+// an account — and nobody else.
+const PENDING_CLAIM_KEY = 'brickd:pending-claim';
+// Local-only data worth carrying over from guest mode. (Favorites
+// migrate separately, via the cloud sync in favorites.js.)
+const CLAIMABLE = ['brickd:receipt-history', 'brickd:recent-searches'];
 
 const AuthContext = createContext(null);
 
@@ -36,6 +43,28 @@ export function AuthProvider({ children }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
+      // If this account was created on this device, adopt the guest
+      // data it produced before signing up. Two safe signals:
+      //   - email sign-up left a pending claim for this address
+      //   - the account itself was created seconds ago (Google sign-up,
+      //     which has no separate sign-up step)
+      // An existing user signing in matches neither, so nobody ever
+      // inherits a previous guest's history.
+      const user = s?.user;
+      if (!user?.email) return;
+      const createdAt = Date.parse(user.created_at ?? '');
+      const brandNew =
+        Number.isFinite(createdAt) && Date.now() - createdAt < 120000;
+      AsyncStorage.getItem(PENDING_CLAIM_KEY)
+        .then(async (pending) => {
+          const claimedByEmail =
+            pending && pending.toLowerCase() === user.email.toLowerCase();
+          if (claimedByEmail || brandNew) {
+            await claimGuestData(user.id, CLAIMABLE);
+          }
+          if (claimedByEmail) await AsyncStorage.removeItem(PENDING_CLAIM_KEY);
+        })
+        .catch(() => {});
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -50,6 +79,9 @@ export function AuthProvider({ children }) {
   const signUp = async (email, password) => {
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
+    // Email confirmation means no session yet — remember that this
+    // address may claim this device's guest data when it first signs in.
+    AsyncStorage.setItem(PENDING_CLAIM_KEY, email.trim()).catch(() => {});
   };
 
   const signIn = async (email, password) => {

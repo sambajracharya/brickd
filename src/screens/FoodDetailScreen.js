@@ -86,9 +86,13 @@ export default function FoodDetailScreen({ route, navigation }) {
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.scoreHero}>
+          {/* Saving before the breakdown loads would store a record with
+              no nutrients or evidence, so adding waits for details.
+              Removing is always allowed. */}
           <TouchableOpacity
-            style={styles.heroHeart}
+            style={[styles.heroHeart, !details && !saved && styles.heartWaiting]}
             onPress={() => toggleFavorite(heartFood())}
+            disabled={!details && !saved}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityLabel={saved ? 'Remove from saved' : 'Save food'}
           >
@@ -206,6 +210,9 @@ function createStyles(t) {
       right: 4,
       zIndex: 1,
       padding: 4,
+    },
+    heartWaiting: {
+      opacity: 0.35,
     },
     scoreHalo: {
       shadowOpacity: 0.55,

@@ -104,6 +104,9 @@ export default function HomeScreen({ navigation }) {
   const [error, setError] = useState(null);
   const [recents, setRecents] = useState([]);
   const debounceRef = useRef(null);
+  // Guards against a slow earlier request landing after a newer one and
+  // overwriting the results (very reachable on weak in-store signal).
+  const requestIdRef = useRef(0);
 
   // Load recent searches for the current identity.
   useEffect(() => {
@@ -141,16 +144,20 @@ export default function HomeScreen({ navigation }) {
     }
 
     setLoading(true);
+    const requestId = ++requestIdRef.current;
     debounceRef.current = setTimeout(async () => {
       try {
         const foods = await searchFoods(trimmed);
+        // A newer search started while this one was in flight — drop it.
+        if (requestId !== requestIdRef.current) return;
         setResults(foods);
         setError(null);
         if (foods.length > 0) rememberSearch(trimmed);
       } catch (e) {
+        if (requestId !== requestIdRef.current) return;
         setError('Could not reach the food database. Check your connection.');
       } finally {
-        setLoading(false);
+        if (requestId === requestIdRef.current) setLoading(false);
       }
     }, 350);
 

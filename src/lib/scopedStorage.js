@@ -37,6 +37,31 @@ export async function migrateLegacyKey(base, userId) {
   } catch {}
 }
 
+// Hand the guest namespace's data to a newly created account.
+//
+// Only ever called for an account that signed up on THIS device (see
+// auth.js pending-claim), never on an arbitrary sign-in — otherwise a
+// second person signing in would inherit the previous guest's history.
+// Existing data for the account always wins; guest data is cleared
+// either way so it can't be inherited twice.
+export async function claimGuestData(userId, bases) {
+  if (!userId) return;
+  for (const base of bases) {
+    const from = scopedKey(base, null);
+    const to = scopedKey(base, userId);
+    try {
+      const [mine, theirs] = await Promise.all([
+        AsyncStorage.getItem(to),
+        AsyncStorage.getItem(from),
+      ]);
+      if (theirs != null && mine == null) {
+        await AsyncStorage.setItem(to, theirs);
+      }
+      if (theirs != null) await AsyncStorage.removeItem(from);
+    } catch {}
+  }
+}
+
 // Remove every on-device Brick'd key belonging to one identity.
 export async function purgeScope(userId) {
   const suffix = `:${scopeOf(userId)}`;
