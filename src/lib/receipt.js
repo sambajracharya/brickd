@@ -278,8 +278,9 @@ export function parseReceipt(rawText) {
   const matched = [];
   const unmatched = [];
   const seen = new Set();
+  if (typeof rawText !== 'string') return { matched, unmatched };
 
-  for (const rawLine of String(rawText).split(/\r?\n/)) {
+  for (const rawLine of rawText.split(/\r?\n/)) {
     const cleaned = cleanLine(rawLine);
     if (!cleaned) continue;
 
@@ -338,6 +339,12 @@ function chipValues(food) {
 
 // { weak: ['Zinc', 'Vitamin D'], suggestions: [food, food, food] }
 export function cartGaps(matched) {
+  // An empty cart has no gaps to report — without this it would claim
+  // every nutrient is missing and recommend a full shopping list.
+  if (!Array.isArray(matched) || matched.length === 0) {
+    return { weak: [], suggestions: [] };
+  }
+
   // Best single source in the cart, per nutrient.
   const best = { Protein: 0, Zinc: 0, Magnesium: 0, 'Vitamin D': 0, Selenium: 0 };
   for (const { food } of matched) {
