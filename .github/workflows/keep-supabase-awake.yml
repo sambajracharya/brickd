@@ -1,0 +1,34 @@
+# Supabase pauses free-tier projects after 7 days with no API traffic,
+# which would break sign-in and favourites sync until manually restored.
+# This pings the REST API twice a week so the project stays awake while
+# nobody is actively developing.
+#
+# The key below is the *publishable* (anon) key — the same one shipped
+# inside the app bundle, safe to expose, and protected by row-level
+# security. It is not the secret/service_role key.
+
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # Sundays and Wednesdays at 12:00 UTC — well inside the 7-day window.
+    - cron: '0 12 * * 0,3'
+  workflow_dispatch: # lets you trigger it manually from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          URL="https://ugezwkfhnywkxzbmxkwa.supabase.co/rest/v1/favorites?select=count"
+          KEY="sb_publishable_iKvjfHAfyhPsDpUli5mhsw_bYBAKzis"
+          CODE=$(curl -s -o /tmp/out.txt -w '%{http_code}' \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" "$URL")
+          echo "HTTP $CODE"
+          cat /tmp/out.txt
+          # 200 = awake. Anything else means the project needs attention.
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Supabase did not respond with 200 — it may be paused."
+            exit 1
+          fi
