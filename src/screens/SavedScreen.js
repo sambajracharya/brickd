@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -7,57 +7,22 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavorites } from '../store/favorites';
 import FoodCard from '../components/FoodCard';
 import Screen from '../components/Screen';
-import { scopedKey, migrateLegacyKey } from '../lib/scopedStorage';
-import { useAuth } from '../store/auth';
+import { useShoppingChecks } from '../store/shoppingChecks';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
 
-// In-store check-offs live on the device (they're transient shopping
-// state, not account data) but are still scoped per identity.
-const CHECKED_BASE = 'brickd:saved-checked';
-
 export default function SavedScreen({ navigation }) {
   const t = useTheme();
-  const { user } = useAuth();
-  const uid = user?.id ?? null;
-  const checkedKey = scopedKey(CHECKED_BASE, uid);
   const styles = useMemo(() => createStyles(t), [t]);
   const { favorites } = useFavorites();
-  const [checked, setChecked] = useState({});
+  // Shared with the store screen so ticks show up in both places.
+  const { isChecked, toggleChecked, clearChecked, checkedCount } =
+    useShoppingChecks();
 
-  useEffect(() => {
-    let cancelled = false;
-    setChecked({});
-    migrateLegacyKey(CHECKED_BASE, uid)
-      .then(() => AsyncStorage.getItem(checkedKey))
-      .then((json) => {
-        if (!cancelled && json) setChecked(JSON.parse(json));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [uid, checkedKey]);
-
-  const toggleChecked = (fdcId) => {
-    setChecked((prev) => {
-      const next = { ...prev, [fdcId]: !prev[fdcId] };
-      if (!next[fdcId]) delete next[fdcId];
-      AsyncStorage.setItem(checkedKey, JSON.stringify(next)).catch(() => {});
-      return next;
-    });
-  };
-
-  const clearChecked = () => {
-    setChecked({});
-    AsyncStorage.removeItem(checkedKey).catch(() => {});
-  };
-
-  const anyChecked = Object.keys(checked).length > 0;
+  const anyChecked = checkedCount > 0;
 
   return (
     <Screen>
@@ -77,7 +42,7 @@ export default function SavedScreen({ navigation }) {
         data={favorites}
         keyExtractor={(item) => String(item.fdcId)}
         renderItem={({ item }) => {
-          const isChecked = !!checked[item.fdcId];
+          const ticked = isChecked(item.fdcId);
           return (
             <View style={styles.row}>
               <TouchableOpacity
@@ -85,16 +50,16 @@ export default function SavedScreen({ navigation }) {
                 onPress={() => toggleChecked(item.fdcId)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityLabel={
-                  isChecked ? 'Mark as not bought' : 'Mark as bought'
+                  ticked ? 'Mark as not bought' : 'Mark as bought'
                 }
               >
                 <Ionicons
-                  name={isChecked ? 'checkmark-circle' : 'ellipse-outline'}
+                  name={ticked ? 'checkmark-circle' : 'ellipse-outline'}
                   size={26}
-                  color={isChecked ? t.colors.accent : t.colors.textTertiary}
+                  color={ticked ? t.colors.accent : t.colors.textTertiary}
                 />
               </TouchableOpacity>
-              <View style={[styles.cardWrap, isChecked && styles.cardChecked]}>
+              <View style={[styles.cardWrap, ticked && styles.cardChecked]}>
                 <FoodCard
                   food={item}
                   onPress={() =>

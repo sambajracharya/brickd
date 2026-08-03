@@ -1,17 +1,17 @@
-// Curated "foods commonly found here" catalog, tagged by grocery store
-// type (matches SHOP_LABELS in ../api/stores.js) and, where relevant,
-// by cuisine (matches CUISINE_LABELS keys in ../api/stores.js).
+// Curated food catalog: the mission-relevant foods Brick'd recommends,
+// plus (receiptOnly) the everyday groceries receipt scanning needs to
+// recognise. All entries carry real USDA lab data and the same scores
+// used everywhere else in the app.
 //
-// IMPORTANT: this is NOT live inventory. No public API exposes real-time
-// stock for the stores Brick'd finds (see stores.js). This catalog
-// answers "what should I look for at a store like this?" using real
-// USDA lab data — same scoring as food search — not "this exact store
-// has this exact item right now."
+// Brick'd deliberately makes NO claim about any store's inventory — no
+// public API exposes that for the stores it finds (see stores.js). The
+// store screen shows the user's own list and nutrient gaps instead.
 //
-// Cuisine tags let ethnic groceries (e.g. "Desi Bazaar" -> southAsian)
-// show culturally relevant staples instead of a generic list. We list
-// grocery INGREDIENTS of each cuisine that fit Brick'd's mission — a
-// store sells lentils and lamb, not plated butter chicken.
+// The one store-specific signal that IS honest: cuisine. When a store's
+// name reveals one (e.g. "Desi Bazaar" -> southAsian), the cuisines
+// tags below surface staples that kind of store is known for. These are
+// grocery INGREDIENTS, not plated dishes — a store sells lentils and
+// lamb, not butter chicken.
 //
 // fdcId/score/nutrients/flags come from real USDA FoodData Central
 // lookups with the evidence-ranked weights (see usda.js SCORING), so
@@ -323,35 +323,13 @@ export const CURATED_FOODS = [
   { fdcId: 174832, name: 'Almond Milk', score: 7, nutrients: ['Vitamin D 1µg'], evidence: 'Supportive', flags: [], storeTypes: [], cuisines: [], receiptOnly: true },
 ];
 
-// Foods for a specific store. Cuisine match (from the store's name,
-// e.g. "Desi Bazaar" -> southAsian) beats the generic store-type list;
-// otherwise fall back to store type, then to the full catalog.
-export function getFoodsForStore(store) {
-  // Store lists stay mission-curated; receipt-only groceries excluded.
-  const storeFoods = CURATED_FOODS.filter((f) => !f.receiptOnly);
-
-  if (store.cuisine) {
-    const cuisineMatches = storeFoods.filter((f) =>
-      f.cuisines.includes(store.cuisine)
-    );
-    if (cuisineMatches.length > 0) {
-      return {
-        foods: [...cuisineMatches].sort((a, b) => b.score - a.score),
-        basis: 'cuisine',
-      };
-    }
-  }
-  const typeMatches = storeFoods.filter((f) =>
-    f.storeTypes.includes(store.type)
-  );
-  if (typeMatches.length > 0) {
-    return {
-      foods: [...typeMatches].sort((a, b) => b.score - a.score),
-      basis: 'type',
-    };
-  }
-  return {
-    foods: [...storeFoods].sort((a, b) => b.score - a.score),
-    basis: 'fallback',
-  };
+// Staples of a store's cuisine, when its name reveals one ("Desi
+// Bazaar" -> southAsian). Returns [] for stores with no detected
+// cuisine — the store screen shows the user's own list and gaps
+// instead of pretending to know a generic supermarket's inventory.
+export function getCuisineFoods(cuisine) {
+  if (!cuisine) return [];
+  return CURATED_FOODS.filter(
+    (f) => !f.receiptOnly && f.cuisines.includes(cuisine)
+  ).sort((a, b) => b.score - a.score);
 }

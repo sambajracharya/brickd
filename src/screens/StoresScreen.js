@@ -35,7 +35,7 @@ function StoreCard({ store, onPress, styles }) {
       {store.openingHours && (
         <Text style={styles.hours}>{store.openingHours}</Text>
       )}
-      <Text style={styles.viewFoods}>See foods commonly found here →</Text>
+      <Text style={styles.viewFoods}>Shop this store →</Text>
     </TouchableOpacity>
   );
 }

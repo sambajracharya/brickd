@@ -22,6 +22,7 @@ import PrivacyScreen from './src/screens/PrivacyScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import BackButton from './src/components/BackButton';
 import { FavoritesProvider } from './src/store/favorites';
+import { ShoppingChecksProvider } from './src/store/shoppingChecks';
 import { ThemeProvider, useTheme } from './src/store/theme';
 import { AuthProvider, useAuth } from './src/store/auth';
 
@@ -208,7 +209,9 @@ export default function App() {
         <ThemeProvider>
           <AuthProvider>
             <FavoritesProvider>
-              <AppShell />
+              <ShoppingChecksProvider>
+                <AppShell />
+              </ShoppingChecksProvider>
             </FavoritesProvider>
           </AuthProvider>
         </ThemeProvider>
