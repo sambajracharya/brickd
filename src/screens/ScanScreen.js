@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,21 +9,17 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import { lookupBarcode } from '../api/openfoodfacts';
 import Screen from '../components/Screen';
 import ReceiptScan from '../components/ReceiptScan';
+import BarcodeScanner from '../components/BarcodeScanner';
 import { useTheme } from '../store/theme';
 import { spacing } from '../theme';
-
-// Camera barcode scanning isn't supported on web — manual entry only.
-const CAMERA_SUPPORTED = Platform.OS !== 'web';
 
 export default function ScanScreen({ navigation }) {
   const t = useTheme();
   const styles = useMemo(() => createStyles(t), [t]);
   const [tool, setTool] = useState('barcode'); // barcode | receipt
-  const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState('idle'); // idle | looking | result | notfound | error
   const [product, setProduct] = useState(null);
   const [manualCode, setManualCode] = useState('');
@@ -45,11 +40,12 @@ export default function ScanScreen({ navigation }) {
     }
   }, []);
 
+  // Both scanner implementations hand back the raw barcode string.
   const onBarcodeScanned = useCallback(
-    ({ data }) => {
+    (code) => {
       if (paused) return;
       setPaused(true);
-      lookup(data);
+      lookup(code);
     },
     [paused, lookup]
   );
@@ -61,7 +57,6 @@ export default function ScanScreen({ navigation }) {
     setMode('idle');
   };
 
-  const showCamera = CAMERA_SUPPORTED && permission?.granted && mode === 'idle';
   const ring = product ? t.scoreColor(product.score) : t.colors.accent;
 
   return (
@@ -106,37 +101,10 @@ export default function ScanScreen({ navigation }) {
 
         {tool === 'receipt' && <ReceiptScan navigation={navigation} />}
 
-        {/* Camera area (native only) */}
-        {tool === 'barcode' && CAMERA_SUPPORTED && mode === 'idle' && !permission?.granted && (
+        {/* Live camera scanning — expo-camera on native, ZXing on web */}
+        {tool === 'barcode' && mode === 'idle' && (
           <View style={styles.cameraBox}>
-            <Text style={styles.centerText}>
-              Brick'd needs camera access to scan barcodes.
-            </Text>
-            <TouchableOpacity style={styles.button} onPress={requestPermission}>
-              <Text style={styles.buttonText}>Allow camera</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {tool === 'barcode' && showCamera && (
-          <View style={styles.cameraBox}>
-            <CameraView
-              style={styles.camera}
-              barcodeScannerSettings={{
-                barcodeTypes: ['upc_a', 'upc_e', 'ean13', 'ean8'],
-              }}
-              onBarcodeScanned={onBarcodeScanned}
-            />
-            <Text style={styles.cameraHint}>CENTER THE BARCODE IN VIEW</Text>
-          </View>
-        )}
-
-        {tool === 'barcode' && !CAMERA_SUPPORTED && mode === 'idle' && (
-          <View style={styles.cameraBox}>
-            <Text style={styles.centerText}>
-              Camera scanning works on your phone. On web, enter the barcode
-              number manually below.
-            </Text>
+            <BarcodeScanner onScanned={onBarcodeScanned} paused={paused} />
           </View>
         )}
 
